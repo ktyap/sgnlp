@@ -84,9 +84,9 @@ class RNTN(nn.Module):
 
     def __init__(self, input_dim, n_class, l):
         super(RNTN, self).__init__()
-        self.input_dim = input_dim
-        self.n_class = n_class
-        self.window = 5
+        # TODO: NOT USED ANYWHERE self.input_dim = input_dim
+        # TODO: NOT USED ANYWHERE self.n_class = n_class
+        # TODO: NOT USED ANYWHERE self.window = 5
         self.V = nn.Parameter(torch.zeros((input_dim, 1, 2*input_dim, 2*input_dim)))
         #self.UU = nn.Parameter(torch.zeros((input_dim, 1, 2*input_dim, 10)))
         #self.VV = nn.Parameter(torch.zeros((input_dim, 1, 10, 2*input_dim)))
@@ -102,12 +102,12 @@ class RNTN(nn.Module):
         self.ac_linear = nn.ReLU()
         self.ac_tanh = nn.Tanh()
         self.softmax = nn.Softmax(dim=1)
-        self.l = l
+        # TODO: SELF.L NOT USED ANYWHERE self.l = l
         self.cnn3 = nn.Conv1d(in_channels=1, out_channels=1, kernel_size=5, padding=4, stride=2)
         self.dropout = nn.Dropout(0.8)
         # self.bilstm = nn.LSTM(input_size=input_dim, hidden_size=input_dim, dropout=0.1, bidirectional=True)
-        if l:
-            self.L = nn.Linear(2*input_dim, input_dim)
+        # TODO: NOT USED ANYWHERE if l:
+        # TODO: NOT USED ANYWHERE    self.L = nn.Linear(2*input_dim, input_dim)
 
     def _reverse_seq(self, X, mask):
         """
@@ -126,6 +126,7 @@ class RNTN(nn.Module):
 
     def forward(self, U, mask):
         """
+        Implements local variant of model.
         :param U:-->seq, batch, dim
         :return:
         """
@@ -208,7 +209,6 @@ class RNTN(nn.Module):
                 # h = self.gru(p, h)
                 h, c = self.gru(p, (h, c))
 
-
                 h3 = self.cnn3(p.unsqueeze(0)).squeeze(0)
                 h_cat = torch.cat((h, h3), dim=1)
 
@@ -226,14 +226,14 @@ class RNTN(nn.Module):
         return results
 
 
-class Classifier(nn.Module):
-
-    def __init__(self):
-        super(Classifier, self).__init__()
-        pass
-
-    def forward(self, *input):
-        pass
+# NOT USED ANYWHERE class Classifier(nn.Module):
+#
+#    def __init__(self):
+#        super(Classifier, self).__init__()
+#        pass
+#
+#    def forward(self, *input):
+#        pass
 
 
 def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None, train=False):
