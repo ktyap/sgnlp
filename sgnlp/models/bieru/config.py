@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from transformers import PretrainedConfig
 
 
@@ -31,11 +29,11 @@ class BieruConfig(PretrainedConfig):
     ):
         super().__init__(**kwargs)
 
-        self.input_dim = input_dim,
-        self.n_class = n_class,
-        self.in_channels = in_channels,
-        self.out_channels = out_channels,
-        self.kernel_size = kernel_size,
-        self.padding = padding,
-        self.stride = stride,
+        self.input_dim = input_dim
+        self.n_class = n_class
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.stride = stride
         self.dropout_rate = dropout_rate
