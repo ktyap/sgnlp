@@ -1,3 +1,4 @@
+from email.policy import default
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
@@ -5,6 +6,10 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils.rnn import pad_sequence
 import pickle
 import pandas as pd
+import argparse
+import pathlib
+import json
+from .data_class import BieruArguments
 
 
 class IEMOCAPDataset(Dataset):
@@ -157,3 +162,22 @@ class MaskedNLLLoss(nn.Module):
             loss = self.loss(pred*mask_, target)\
                             /torch.sum(self.weight[target]*mask_.squeeze())
         return loss
+
+
+def parse_args_and_load_config(config_path: str = "config/bieru_config.json"):
+    """Args parser helper method
+
+    Args:
+        config_path (str, optional): _description_. Defaults to "config/bieru_config.json".
+    
+    Returns:
+        BieruArguments: BieruArguments instance with parsed args
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default=config_path)
+    args = parser.parse_args()
+    with open(pathlib.Path(__file__).parent / args.config, "r") as cfg_file:
+        cfg = json.load(cfg_file)
+    bieru_args = BieruArguments(**cfg)
+
+    return bieru_args
