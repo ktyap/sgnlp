@@ -4,6 +4,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.nn.utils.rnn import pad_sequence
+import numpy as np
 import pickle
 import pandas as pd
 import argparse
@@ -29,13 +30,13 @@ class IEMOCAPDataset(Dataset):
 
     def __getitem__(self, index):
         vid = self.keys[index]
-        return torch.FloatTensor(self.videoText[vid]),\
-               torch.FloatTensor(self.videoVisual[vid]),\
-               torch.FloatTensor(self.videoAudio[vid]),\
-               torch.FloatTensor([[1,0] if x=='M' else [0,1] for x in\
-                                  self.videoSpeakers[vid]]),\
-               torch.FloatTensor([1]*len(self.videoLabels[vid])),\
-               torch.LongTensor(self.videoLabels[vid]),\
+        return torch.FloatTensor(np.array(self.videoText[vid])),\
+               torch.FloatTensor(np.array(self.videoVisual[vid])),\
+               torch.FloatTensor(np.array(self.videoAudio[vid])),\
+               torch.FloatTensor(np.array([[1,0] if x=='M' else [0,1] for x in\
+                                  self.videoSpeakers[vid]])),\
+               torch.FloatTensor(np.array([1]*len(self.videoLabels[vid]))),\
+               torch.LongTensor(np.array(self.videoLabels[vid])),\
                vid
 
     def __len__(self):

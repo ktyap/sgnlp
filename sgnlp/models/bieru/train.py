@@ -1,17 +1,21 @@
 import argparse
+import logging
+import numpy as np
 import pathlib
 import time
-import numpy as np
 import torch
-import torch.optim as optim
 import torch.nn.functional as F
+import torch.optim as optim
 from .config import BieruConfig
 from .modeling import BieruModel, BieruModelOutput
 from .utils import get_IEMOCAP_loaders, MaskedNLLLoss, parse_args_and_load_config
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, \
     classification_report, precision_recall_fscore_support
 
-def train_or_eval_model(model, loss_function, dataloader, cuda, epoch, optimizer=None, train=False):
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def train_or_eval(model, loss_function, dataloader, cuda, epoch, optimizer=None, train=False):
 
     losses = []
     preds = []
@@ -103,19 +107,24 @@ def train_or_eval_model(model, loss_function, dataloader, cuda, epoch, optimizer
 #     return args
 
 
-def train_loops(cfg):
+def train_model(cfg):
+
+    logger.info(f"Training arguments: {vars(cfg)}")
     
     cuda = torch.cuda.is_available() and not cfg.train_args["no_cuda"]
+    
     if cuda:
-        print('Running on GPU')
+        device = 'GPU'
     else:
-        print('Running on CPU')
+        device = 'CPU'
+
+    logger.info(f"Using device: {device}")
 
     config = BieruConfig()
     model = BieruModel(config)
 
     #model = RNTN(D_m, n_classes, False)
-    print('\n number of parameters {}'.format(sum([p.numel() for p in model.parameters()])))
+    logger.info('Number of parameters {}'.format(sum([p.numel() for p in model.parameters()])))
     if cuda:
         model.cuda()
     
@@ -155,13 +164,20 @@ def train_loops(cfg):
 
     best_loss, best_label, best_pred, best_mask = None, None, None, None
 
-    for e in range(cfg.train_args["epochs"]):
+    epochs = cfg.train_args["epochs"]
+
+    for e in range(epochs):
+
+        logger.info(
+            f"Epoch: {e + 1}/{epochs}, lr: {optimizer.param_groups[0]['lr']}"
+        )
+
         start_time = time.time()
-        train_loss, train_acc, _,_,_, train_fscore = train_or_eval_model(model, loss_function,
+        train_loss, train_acc, _,_,_, train_fscore = train_or_eval(model, loss_function,
                                                 train_loader, cuda, e, optimizer, True)
-        valid_loss, valid_acc, _,_,_, val_fscore = train_or_eval_model(model, loss_function, valid_loader, cuda, e)
+        valid_loss, valid_acc, _,_,_, val_fscore = train_or_eval(model, loss_function, valid_loader, cuda, e)
         #scheduler.step()
-        test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = train_or_eval_model(model, loss_function, test_loader, cuda, e)
+        test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = train_or_eval(model, loss_function, test_loader, cuda, e)
 
         if best_loss == None or best_loss > test_loss:
             best_loss, best_label, best_pred, best_mask =\
@@ -180,4 +196,4 @@ def train_loops(cfg):
 
 if __name__ == '__main__':
     cfg = parse_args_and_load_config()
-    train_loops(cfg)
+    train_model(cfg)
