@@ -112,7 +112,7 @@ class BieruModel(BieruPreTrainedModel):
                         v_cat))
                 p = self.dropout(p)
                 h, c = self.gru(p, (h, c))
-                h3 = self.cnn3(p.unsqueeze(0)).squeeze(0)
+                h3 = self.cnn3(p.unsqueeze(1)).squeeze(1)
                 h_cat = torch.cat((h, h3), dim=1)
 
                 h_cat = self.dropout(h_cat)
@@ -131,7 +131,7 @@ class BieruModel(BieruPreTrainedModel):
                 #p = self.ac_linear(p)
                 p = self.dropout(p)
                 h, c = self.gru(p, (h, c))
-                h3 = self.cnn3(p.unsqueeze(0)).squeeze(0)
+                h3 = self.cnn3(p.unsqueeze(1)).squeeze(1)
                 h_cat = torch.cat((h, h3), dim=1)
                 h_cat = self.dropout(h_cat)
                 results1 = torch.cat((results1, h_cat))
@@ -151,7 +151,7 @@ class BieruModel(BieruPreTrainedModel):
                 p = self.dropout(p)
                 h, c = self.gru(p, (h, c))
 
-                h3 = self.cnn3(p.unsqueeze(0)).squeeze(0)
+                h3 = self.cnn3(p.unsqueeze(1)).squeeze(1)
                 h_cat = torch.cat((h, h3), dim=1)
                 h_cat = self.dropout(h_cat)
                 results2 = torch.cat((results2, h_cat))
@@ -170,7 +170,7 @@ class BieruModel(BieruPreTrainedModel):
                 # h = self.gru(p, h)
                 h, c = self.gru(p, (h, c))
 
-                h3 = self.cnn3(p.unsqueeze(0)).squeeze(0)
+                h3 = self.cnn3(p.unsqueeze(1)).squeeze(1)
                 h_cat = torch.cat((h, h3), dim=1)
 
                 h_cat = self.dropout(h_cat)

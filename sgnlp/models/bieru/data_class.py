@@ -4,6 +4,10 @@ from typing import Any, Dict, List
 
 @dataclass
 class BieruArguments:
+    model_folder: str = field(
+        default="model/",
+        metadata={"help": "Path to save pretrained weights and config"},
+    )
     iemocap_dataset_path: str = field(
         default="temp/",
         metadata={"help": "Temporary path for IEMOCAP dataset"},

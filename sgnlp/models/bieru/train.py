@@ -123,6 +123,9 @@ def train_model(cfg):
     config = BieruConfig()
     model = BieruModel(config)
 
+    # Path to save pretrained model and weights
+    model_path = pathlib.Path(__file__).parent.joinpath(cfg.model_folder)
+
     #model = RNTN(D_m, n_classes, False)
     logger.info('Number of parameters {}'.format(sum([p.numel() for p in model.parameters()])))
     if cuda:
@@ -180,6 +183,8 @@ def train_model(cfg):
         test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = train_or_eval(model, loss_function, test_loader, cuda, e)
 
         if best_loss == None or best_loss > test_loss:
+            # Save model weights and config.json
+            model.save_pretrained(pathlib.Path(model_path))
             best_loss, best_label, best_pred, best_mask =\
                     test_loss, test_label, test_pred, test_mask
 
@@ -191,7 +196,10 @@ def train_model(cfg):
     print('Loss {} accuracy {}'.format(best_loss,
                                      round(accuracy_score(best_label, best_pred, sample_weight=best_mask)*100,2)))
     print(classification_report(best_label,best_pred,sample_weight=best_mask, digits=4))
-    print(confusion_matrix(best_label,best_pred,sample_weight=best_mask))
+    cm = confusion_matrix(best_label,best_pred,sample_weight=best_mask)
+    print(cm)
+    # Calculates per class accuracy
+    print(cm.diagonal()/cm.sum(axis=0))
 
 
 if __name__ == '__main__':
