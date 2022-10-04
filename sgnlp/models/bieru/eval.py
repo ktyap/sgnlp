@@ -14,7 +14,7 @@ from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, \
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def train(model, loss_function, dataloader, cuda, optimizer=None, train=False):
+def evaluate(model, loss_function, dataloader, cuda, optimizer=None, train=False):
 
     losses = []
     preds = []
@@ -106,7 +106,7 @@ def train(model, loss_function, dataloader, cuda, optimizer=None, train=False):
 #     return args
 
 
-def train_model(cfg):
+def eval_model(cfg):
 
     logger.info(f"Training arguments: {vars(cfg)}")
     
@@ -119,11 +119,10 @@ def train_model(cfg):
 
     logger.info(f"Using device: {device}")
 
-    config = BieruConfig()
-    model = BieruModel(config)
-
-    # Path to save pretrained model and weights
+    # Path to pretrained model and weights
     model_path = pathlib.Path(__file__).parent.joinpath(cfg.model_folder)
+    config = BieruConfig.from_pretrained(pathlib.Path(model_path).joinpath("config.json"))
+    model = BieruModel.from_pretrained(pretrained_model_name_or_path=pathlib.Path(model_path).joinpath(cfg.eval_args["model_name"]), config=config)
 
     #model = RNTN(D_m, n_classes, False)
     logger.info('Number of parameters {}'.format(sum([p.numel() for p in model.parameters()])))
@@ -144,24 +143,17 @@ def train_model(cfg):
         loss_function = MaskedNLLLoss(loss_weights.cuda() if cuda else loss_weights)
     else:
         loss_function = MaskedNLLLoss()
-    optimizer = optim.Adam(model.parameters(),
-                           lr=cfg.train_args["lr"],
-                           weight_decay=cfg.train_args["l2"])
+    # optimizer = optim.Adam(model.parameters(),
+    #                        lr=cfg.train_args["lr"],
+    #                        weight_decay=cfg.train_args["l2"])
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10], gamma=0.5, last_epoch=-1)
     #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5,eta_min=4e-08)
     #scheduler = optim.lr_scheduler.StepLR(optimizer, 1, 0.99)
 
     file_path = pathlib.Path(__file__).parent.joinpath(cfg.iemocap_dataset_path)
     file_path = pathlib.Path(file_path).joinpath(cfg.iemocap_dataset_name)
-    # train_loader, valid_loader, test_loader =\
-    #     get_IEMOCAP_loaders(pathlib.Path(file_path),
-    #                         valid=cfg.train_args["valid"],
-    #                         batch_size=cfg.train_args["batch_size"],
-    #                         num_workers=cfg.train_args["num_workers"]
-    #     )
-    train_loader, valid_loader, test_loader =\
+    _, _, test_loader =\
         get_IEMOCAP_loaders(pathlib.Path(file_path),
-                            valid=cfg.train_args["valid"],
                             batch_size=cfg.train_args["batch_size"],
                             num_workers=cfg.train_args["num_workers"]
         )
@@ -174,32 +166,23 @@ def train_model(cfg):
 
     epochs = cfg.train_args["epochs"]
 
-    for e in range(epochs):
+    start_time = time.time()
+    #scheduler.step()
+    test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = evaluate(model, loss_function, test_loader, cuda)
 
-        logger.info(
-            f"Epoch: {e + 1}/{epochs}, lr: {optimizer.param_groups[0]['lr']}"
-        )
+    if best_loss == None or best_loss > test_loss:
+        # Save model weights and config.json
+        model.save_pretrained(pathlib.Path(model_path))
+        best_loss, best_label, best_pred, best_mask =\
+                test_loss, test_label, test_pred, test_mask
 
-        start_time = time.time()
-        train_loss, train_acc, _,_,_, train_fscore = train(model, loss_function,
-                                                train_loader, cuda, optimizer, True)
-        valid_loss, valid_acc, _,_,_, val_fscore = train(model, loss_function, valid_loader, cuda)
-        #scheduler.step()
-        test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = train(model, loss_function, test_loader, cuda)
-
-        if best_loss == None or best_loss > test_loss:
-            # Save model weights and config.json
-            model.save_pretrained(pathlib.Path(model_path))
-            best_loss, best_label, best_pred, best_mask =\
-                    test_loss, test_label, test_pred, test_mask
-
-        if cfg.train_args["valid"] != 0.0:
-            logger.info('epoch {} train_loss {} train_acc {} train_fscore{} valid_loss {} valid_acc {} val_fscore {} time {}'.\
-                    format(e+1, train_loss, train_acc, train_fscore, valid_loss, valid_acc, val_fscore,\
-                        round(time.time()-start_time,2)))
-        else:
-            logger.info('epoch {} train_loss {} train_acc {} train_fscore{} time {}'.\
-                    format(e+1, train_loss, train_acc, train_fscore, round(time.time()-start_time,2)))
+    # if cfg.train_args["valid"] != 0.0:
+    #     logger.info('epoch {} train_loss {} train_acc {} train_fscore{} valid_loss {} valid_acc {} val_fscore {} time {}'.\
+    #             format(e+1, train_loss, train_acc, train_fscore, valid_loss, valid_acc, val_fscore,\
+    #                 round(time.time()-start_time,2)))
+    # else:
+    #     logger.info('epoch {} train_loss {} train_acc {} train_fscore{} time {}'.\
+    #             format(e+1, train_loss, train_acc, train_fscore, round(time.time()-start_time,2)))
 
     logger.info('Test performance: Loss {} accuracy {}'.format(best_loss, round(accuracy_score(best_label, best_pred, sample_weight=best_mask)*100,2)))
 
@@ -212,4 +195,4 @@ def train_model(cfg):
 
 if __name__ == '__main__':
     cfg = parse_args_and_load_config()
-    train_model(cfg)
+    eval_model(cfg)

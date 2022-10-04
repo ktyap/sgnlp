@@ -1,9 +1,10 @@
 {
+    "model_folder": "model/",
+    "no_cuda": false,
     "iemocap_dataset_path": "temp/",
     "iemocap_dataset_name": "IEMOCAP_features_raw.pkl",
     "train_args": {
-        "no_cuda": false,
-        "epochs": 1,
+        "epochs": 20,
         "lr": 0.0001,
         "l2": 0.001,
         "loss_weights": [11.527776,
@@ -18,5 +19,10 @@
         "batch_size": 1,
         "num_workers": 0,
         "pin_memory": false
+    },
+    "eval_args": {
+        "batch_size": 1,
+        "num_workers": 0,
+        "model_name": "pytorch_model.bin"
     }
 }
