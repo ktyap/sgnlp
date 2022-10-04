@@ -86,20 +86,24 @@ class BieruModel(BieruPreTrainedModel):
 
         return pad_sequence(xfs)
         
-    def forward(self, U, mask) -> BieruModelOutput:
+    def forward(self, U, mask, cuda) -> BieruModelOutput:
         """
         Implements local variant of model.
         :param U:-->seq, batch, dim
         :return:
         """
-        v_mask = torch.rand(self.V.size())
-        v_mask = torch.where(v_mask > 0.15, torch.full_like(v_mask, 1), torch.full_like(v_mask, 0))  #.cuda()
-        self.V = nn.Parameter(self.V * v_mask)
-
         results1 = torch.zeros(0).type(U.type())
         results2 = torch.zeros(0).type(U.type())
-        h = torch.zeros((U.size(1), U.size(2)))  #.cuda()
-        c = torch.zeros((U.size(1), U.size(2)))  #.cuda()
+        v_mask = torch.rand(self.V.size())
+        if cuda:
+            h = torch.zeros((U.size(1), U.size(2))).cuda()
+            c = torch.zeros((U.size(1), U.size(2))).cuda()
+            v_mask = torch.where(v_mask > 0.15, torch.full_like(v_mask, 1), torch.full_like(v_mask, 0)).cuda()
+        else:
+            h = torch.zeros((U.size(1), U.size(2)))
+            c = torch.zeros((U.size(1), U.size(2)))
+            v_mask = torch.where(v_mask > 0.15, torch.full_like(v_mask, 1), torch.full_like(v_mask, 0))
+        self.V = nn.Parameter(self.V * v_mask)
 
         for i in range(U.size()[0]):
             if i == 0:

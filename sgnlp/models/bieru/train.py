@@ -45,7 +45,7 @@ def train_or_eval(model, loss_function, dataloader, cuda, epoch, optimizer=None,
         # print(videoSentence)  # 1, sentences (quotes comma-sep)
 
         # log_prob = model(torch.cat((textf,acouf,visuf),dim=-1), qmask,umask) # seq_len, batch, n_classes
-        log_prob = model(textf, umask)  # batch*seq_len, n_classes
+        log_prob = model(textf, umask, cuda)  # batch*seq_len, n_classes
         labels_ = label.view(-1)  # batch*seq_len
         loss = loss_function(log_prob, labels_, umask)
 
@@ -188,13 +188,16 @@ def train_model(cfg):
             best_loss, best_label, best_pred, best_mask =\
                     test_loss, test_label, test_pred, test_mask
 
-        print('epoch {} train_loss {} train_acc {} train_fscore{} valid_loss {} valid_acc {} val_fscore {} test_loss {} test_acc {} test_fscore {} time {}'.\
-                format(e+1, train_loss, train_acc, train_fscore, valid_loss, valid_acc, val_fscore,\
-                        test_loss, test_acc, test_fscore, round(time.time()-start_time,2)))
+        if cfg.train_args["valid"] != 0.0:
+            logger.info('epoch {} train_loss {} train_acc {} train_fscore{} valid_loss {} valid_acc {} val_fscore {} time {}'.\
+                    format(e+1, train_loss, train_acc, train_fscore, valid_loss, valid_acc, val_fscore,\
+                        round(time.time()-start_time,2)))
+        else:
+            logger.info('epoch {} train_loss {} train_acc {} train_fscore{} time {}'.\
+                    format(e+1, train_loss, train_acc, train_fscore, round(time.time()-start_time,2)))
 
-    print('Test performance..')
-    print('Loss {} accuracy {}'.format(best_loss,
-                                     round(accuracy_score(best_label, best_pred, sample_weight=best_mask)*100,2)))
+    logger.info('Test performance: Loss {} accuracy {}'.format(best_loss, round(accuracy_score(best_label, best_pred, sample_weight=best_mask)*100,2)))
+
     print(classification_report(best_label,best_pred,sample_weight=best_mask, digits=4))
     cm = confusion_matrix(best_label,best_pred,sample_weight=best_mask)
     print(cm)
