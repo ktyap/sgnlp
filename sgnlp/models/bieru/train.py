@@ -145,8 +145,8 @@ def train_model(cfg):
     else:
         loss_function = MaskedNLLLoss()
     optimizer = optim.Adam(model.parameters(),
-                           lr=cfg.train_args["lr"],
-                           weight_decay=cfg.train_args["l2"])
+                           lr=cfg.train_args["lr"])
+                           #weight_decay=cfg.train_args["l2"])
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10], gamma=0.5, last_epoch=-1)
     #scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5,eta_min=4e-08)
     #scheduler = optim.lr_scheduler.StepLR(optimizer, 1, 0.99)
@@ -185,6 +185,7 @@ def train_model(cfg):
                                                 train_loader, cuda, optimizer, True)
         valid_loss, valid_acc, _,_,_, val_fscore = train(model, loss_function, valid_loader, cuda)
         #scheduler.step()
+
         test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = train(model, loss_function, test_loader, cuda)
 
         if best_loss == None or best_loss > test_loss:

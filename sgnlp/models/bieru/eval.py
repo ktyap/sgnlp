@@ -164,8 +164,6 @@ def eval_model(cfg):
 
     best_loss, best_label, best_pred, best_mask = None, None, None, None
 
-    epochs = cfg.train_args["epochs"]
-
     start_time = time.time()
     #scheduler.step()
     test_loss, test_acc, test_label, test_pred, test_mask, test_fscore = evaluate(model, loss_function, test_loader, cuda)
