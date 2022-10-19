@@ -45,7 +45,7 @@ from .configuration_utils import PretrainedConfig
 from .configuration_xlm import XLM_PRETRAINED_CONFIG_ARCHIVE_MAP, XLMConfig
 from .configuration_xlm_roberta import XLM_ROBERTA_PRETRAINED_CONFIG_ARCHIVE_MAP, XLMRobertaConfig
 from .configuration_xlnet import XLNET_PRETRAINED_CONFIG_ARCHIVE_MAP, XLNetConfig
-from .data import (
+from .data_drnn import (
     DataProcessor,
     InputExample,
     InputFeatures,
@@ -164,7 +164,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 if is_sklearn_available():
-    from .data import glue_compute_metrics, xnli_compute_metrics
+    from .data_drnn import glue_compute_metrics, xnli_compute_metrics
 
 
 # Modeling
@@ -400,8 +400,8 @@ if is_torch_available():
 
     # Trainer
     from .trainer import Trainer, torch_distributed_zero_first
-    from .data.data_collator import default_data_collator, DataCollator, DataCollatorForLanguageModeling
-    from .data.datasets import GlueDataset, TextDataset, LineByLineTextDataset, GlueDataTrainingArguments
+    from .data_drnn.data_collator import default_data_collator, DataCollator, DataCollatorForLanguageModeling
+    from .data_drnn.datasets import GlueDataset, TextDataset, LineByLineTextDataset, GlueDataTrainingArguments
 
     # Benchmarks
     from .benchmark.benchmark import PyTorchBenchmark

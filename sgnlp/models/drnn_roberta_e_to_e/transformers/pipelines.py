@@ -30,7 +30,7 @@ import numpy as np
 
 from .configuration_auto import AutoConfig
 from .configuration_utils import PretrainedConfig
-from .data import SquadExample, squad_convert_examples_to_features
+from .data_drnn import SquadExample, squad_convert_examples_to_features
 from .file_utils import is_tf_available, is_torch_available
 from .modelcard import ModelCard
 from .tokenization_auto import AutoTokenizer
