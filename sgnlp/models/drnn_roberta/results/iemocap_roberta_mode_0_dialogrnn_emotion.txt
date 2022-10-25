@@ -1,0 +1,1 @@
+54.17	54.73	Namespace(adam_epsilon=1e-08, attention=False, batch_size=1, cattn='general', class_weight=False, classify='emotion', cls_model='dialogrnn', dataset='iemocap', epochs=30, lr=1e-06, mode='0', model='roberta', residual=True, weight_decay=0.0)
