@@ -6,9 +6,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import AdamW
-from dataloader import DialogLoader
-from model import DialogBertTransformer, MaskedNLLLoss
+from .dataloader import DialogLoader
+from .model import DialogBertTransformer, MaskedNLLLoss
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, classification_report
+
+from .config import DrnnConfig
+from .modeling import DrnnModel
+from .modules import SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
+
 
 def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
     "Prepare optimizer"
@@ -173,7 +178,7 @@ if __name__ == '__main__':
     parser.add_argument('--classify', help='what to classify emotion|act|intent|er|ee')
     parser.add_argument('--cattn', default='general', help='context attention for dialogrnn simple|general|general2')
     parser.add_argument('--attention', action='store_true', default=False, help='use attention on top of lstm model')
-    parser.add_argument('--residual', action='store_true', default=False, help='use residual connection')
+    parser.add_argument('--residual', action='store_true', default=True, help='use residual connection')
     args = parser.parse_args()
 
     print(args)
@@ -227,8 +232,11 @@ if __name__ == '__main__':
         else:
             raise ValueError('--classify must be emotion or act for dailydialog')
     
-    model = DialogBertTransformer(D_h, classification_model, transformer_model, transformer_mode, n_classes, context_attention, attention, residual)
-    
+    #model = DialogBertTransformer(D_h, classification_model, transformer_model, transformer_mode, n_classes, context_attention, attention, residual)
+    config = DrnnConfig()
+    model = DrnnModel(config)
+
+
     if args.class_weight:
         loss_function  = MaskedNLLLoss(loss_weights)  #.cuda())
     else:
