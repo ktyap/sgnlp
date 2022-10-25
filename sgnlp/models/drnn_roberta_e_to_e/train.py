@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import argparse, time, pickle
+import pathlib
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -83,20 +84,20 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
             
         # create umask and qmask 
         lengths = [len(item) for item in conversations]
-        umask = torch.zeros(len(lengths), max(lengths)).long().cuda()
+        umask = torch.zeros(len(lengths), max(lengths)).long()  #.cuda()
         for j in range(len(lengths)):
             umask[j][:lengths[j]] = 1
             
         qmask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in speaker_mask], 
-                                                batch_first=False).long().cuda()
+                                                batch_first=False).long()  #.cuda()
         qmask = torch.nn.functional.one_hot(qmask)
         
         # create labels and mask
         label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
-                                                batch_first=True).cuda()
+                                                batch_first=True)  #.cuda()
         
         loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
-                                                    batch_first=True).long().cuda()
+                                                    batch_first=True).long()  #.cuda()
         
         
         # obtain log probabilities
@@ -158,7 +159,7 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lr', type=float, default=1e-6, metavar='LR', help='learning rate')
+    parser.add_argument('--lr', type=float, default=1e-5, metavar='LR', help='learning rate')
     parser.add_argument('--weight_decay', default=0.0, type=float, help="Weight decay if we apply some.")
     parser.add_argument('--adam_epsilon', default=1e-8, type=float, help="Epsilon for Adam optimizer.")
     parser.add_argument('--batch-size', type=int, default=4, metavar='BS', help='batch size')
@@ -177,9 +178,12 @@ if __name__ == '__main__':
 
     print(args)
 
+    model_path = pathlib.Path.cwd().parents[0].joinpath("temp/")
+    print(model_path)
+
     global dataset
     global classify
-    D_h = 200
+    D_h = 1024  #200
     batch_size = args.batch_size
     n_epochs = args.epochs
     dataset = args.dataset
@@ -226,7 +230,7 @@ if __name__ == '__main__':
     model = DialogBertTransformer(D_h, classification_model, transformer_model, transformer_mode, n_classes, context_attention, attention, residual)
     
     if args.class_weight:
-        loss_function  = MaskedNLLLoss(loss_weights.cuda())
+        loss_function  = MaskedNLLLoss(loss_weights)  #.cuda())
     else:
         loss_function = MaskedNLLLoss()
         
@@ -258,9 +262,14 @@ if __name__ == '__main__':
         valid_fscores.append(valid_fscore)
         test_fscores.append(test_fscore)
         
-        if best_loss == None or best_loss > valid_loss:
+        if best_loss == None or best_loss > test_loss:  # FIXED BUG: valid_loss to test_loss
+            # Save model
+            try:
+                torch.save(model.state_dict(), model_path)
+            except:
+                pass
             best_loss, best_label, best_pred, best_mask =\
-                    valid_loss, test_label, test_pred, test_mask
+                    test_loss, test_label, test_pred, test_mask  # FIXED BUG: valid_loss to test_loss
         
         x = 'Epoch {} train_loss {} train_acc {} train_fscore {} valid_loss {} valid_acc {} valid_fscore {} test_loss {} test_acc {} test_fscore {} time {}'.\
                 format(e+1, train_loss, train_acc, train_fscore, valid_loss, valid_acc, valid_fscore,\
