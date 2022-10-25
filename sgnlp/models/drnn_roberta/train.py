@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
     print(args)
 
-    model_path = pathlib.Path.cwd().parents[0].joinpath("temp/")
+    model_path = pathlib.Path.cwd().joinpath("temp/")
     print(model_path)
 
     global dataset
