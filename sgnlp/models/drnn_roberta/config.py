@@ -1,4 +1,4 @@
-from transformers import PretrainedConfig
+from .transformers import PretrainedConfig
 
 class DrnnConfig(PretrainedConfig):
     """
@@ -19,7 +19,7 @@ class DrnnConfig(PretrainedConfig):
         D_h: int = 1024,
         cls_model: str = "dialogrnn",
         transformer_model_family: str = "roberta",
-        mode: str = "0",
+        mode: str = '0',
         num_classes: int = 6,
         context_attention: str = "general",
         attention: bool = False,

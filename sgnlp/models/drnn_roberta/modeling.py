@@ -4,14 +4,14 @@ import torch.nn.functional as F
 from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
 from torch.nn.utils.rnn import pad_sequence
-from transformers import PreTrainedModel
-from transformers import BertTokenizer, RobertaTokenizer
-from transformers import BertForSequenceClassification, RobertaForSequenceClassification
+from .transformers import PreTrainedModel
+from .transformers import BertTokenizer, RobertaTokenizer
+from .transformers import BertForSequenceClassification, RobertaForSequenceClassification
 from .config import DrnnConfig
 from .modules import MatchingAttention, DialogueRNN
 
 
-if torch.cuda.is_available():
+if False:  # torch.cuda.is_available():
     FloatTensor = torch.cuda.FloatTensor
     LongTensor = torch.cuda.LongTensor
     ByteTensor = torch.cuda.ByteTensor
@@ -87,7 +87,6 @@ class DrnnModel(DrnnPreTrainedModel):
                 model = RobertaForSequenceClassification.from_pretrained('roberta-base')
                 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
                 hidden_dim = 768
-                print("yes")
             elif config.mode == '1':
                 model = RobertaForSequenceClassification.from_pretrained('roberta-large')
                 tokenizer = RobertaTokenizer.from_pretrained('roberta-large')
@@ -107,12 +106,13 @@ class DrnnModel(DrnnPreTrainedModel):
                 model = SentenceTransformer('roberta-large-nli-mean-tokens')
                 hidden_dim = 1024
 
-        # self.transformer_model_family = config.transformer_model_family
+        self.transformer_model_family = config.transformer_model_family
         self.model = model  #.cuda()
         self.hidden_dim = hidden_dim
-        # self.cls_model = config.cls_model
-        # self.D_h = config.D_h
-        # self.residual = config.residual
+        self.cls_model = config.cls_model
+        self.D_h = config.D_h
+        self.residual = config.residual
+        self.attention = config.attention
         
         if config.transformer_model_family in ['bert', 'roberta']:
             self.tokenizer = tokenizer
@@ -194,6 +194,8 @@ class DrnnModel(DrnnPreTrainedModel):
             input_ids = batch['input_ids']  #.cuda()
             attention_mask = batch['attention_mask']  #.cuda()
             _, features = self.model(input_ids, attention_mask, output_hidden_states=True)
+            # print(_)
+            # print(len(features))
             if self.transformer_model_family == 'roberta':
                 features = features[:, 0, :]
                 # features = torch.mean(features, dim=1)

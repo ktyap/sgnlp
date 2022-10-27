@@ -6,13 +6,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import AdamW
-from .dataloader import DialogLoader
-from .model import DialogBertTransformer, MaskedNLLLoss
+#from .dataloader import DialogLoader
+#from .model import DialogBertTransformer, MaskedNLLLoss
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, classification_report
 
 from .config import DrnnConfig
 from .modeling import DrnnModel
-from .modules import SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
+from .modules import MaskedNLLLoss, SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
+from .utils import configure_dataloaders
 
 
 def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
@@ -32,45 +33,45 @@ def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
     return optimizer
 
 
-def configure_dataloaders(dataset, classify, batch_size):
-    "Prepare dataloaders"
-    if dataset == 'persuasion':
-        train_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_' + classify + '_loss_mask.tsv'
-        valid_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_' + classify + '_loss_mask.tsv'
-        test_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_' + classify + '_loss_mask.tsv'
-    else:
-        train_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_loss_mask.tsv'
-        valid_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_loss_mask.tsv'
-        test_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_loss_mask.tsv'
+# def configure_dataloaders(dataset, classify, batch_size):
+#     "Prepare dataloaders"
+#     if dataset == 'persuasion':
+#         train_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_' + classify + '_loss_mask.tsv'
+#         valid_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_' + classify + '_loss_mask.tsv'
+#         test_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_' + classify + '_loss_mask.tsv'
+#     else:
+#         train_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_loss_mask.tsv'
+#         valid_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_loss_mask.tsv'
+#         test_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_loss_mask.tsv'
         
-    train_loader = DialogLoader(
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_utterances.tsv',  
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_' + classify + '.tsv',
-        train_mask,
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_speakers.tsv',  
-        batch_size,
-        shuffle=True
-    )
+#     train_loader = DialogLoader(
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_utterances.tsv',  
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_' + classify + '.tsv',
+#         train_mask,
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_speakers.tsv',  
+#         batch_size,
+#         shuffle=True
+#     )
     
-    valid_loader = DialogLoader(
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_utterances.tsv',  
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_' + classify + '.tsv',
-        valid_mask,
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_speakers.tsv', 
-        batch_size,
-        shuffle=False
-    )
+#     valid_loader = DialogLoader(
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_utterances.tsv',  
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_' + classify + '.tsv',
+#         valid_mask,
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_speakers.tsv', 
+#         batch_size,
+#         shuffle=False
+#     )
     
-    test_loader = DialogLoader(
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_utterances.tsv',  
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_' + classify + '.tsv',
-        test_mask,
-        'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_speakers.tsv', 
-        batch_size,
-        shuffle=False
-    )
+#     test_loader = DialogLoader(
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_utterances.tsv',  
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_' + classify + '.tsv',
+#         test_mask,
+#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_speakers.tsv', 
+#         batch_size,
+#         shuffle=False
+#     )
     
-    return train_loader, valid_loader, test_loader
+#     return train_loader, valid_loader, test_loader
 
 
 
@@ -86,7 +87,7 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
     for conversations, label, loss_mask, speaker_mask in tqdm(dataloader, leave=False):
         if train:
             optimizer.zero_grad()
-            
+
         # create umask and qmask 
         lengths = [len(item) for item in conversations]
         umask = torch.zeros(len(lengths), max(lengths)).long()  #.cuda()
@@ -183,8 +184,10 @@ if __name__ == '__main__':
 
     print(args)
 
-    model_path = pathlib.Path.cwd().joinpath("temp/")
-    print(model_path)
+    model_path = pathlib.Path.cwd().joinpath("drnn_roberta/temp/")
+    dataset_path = pathlib.Path.cwd().joinpath("drnn_roberta/temp/")
+    output_path = pathlib.Path(__file__).resolve().parents[0]
+    print(dataset_path)
 
     global dataset
     global classify
@@ -244,12 +247,12 @@ if __name__ == '__main__':
         
     optimizer = configure_optimizers(model, args.weight_decay, args.lr, args.adam_epsilon)
     # optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    train_loader, valid_loader, test_loader = configure_dataloaders(dataset, classify, batch_size)
+    train_loader, valid_loader, test_loader = configure_dataloaders(dataset_path, dataset, classify, batch_size)
     
-    lf = open('logs/' + dataset + '_' + transformer_model + '_mode_' + transformer_mode 
-              + '_' + classification_model + '_' + classify + '.txt', 'a')
-    rf = open('results/' + dataset + '_' + transformer_model + '_mode_' + transformer_mode 
-              + '_' + classification_model + '_' + classify + '.txt', 'a')
+    lf = open(pathlib.PurePath(output_path, 'logs', (dataset + '_' + transformer_model + '_mode_' + transformer_mode 
+              + '_' + classification_model + '_' + classify + '.txt')), 'a')
+    rf = open(pathlib.PurePath(output_path, 'results', (dataset + '_' + transformer_model + '_mode_' + transformer_mode 
+              + '_' + classification_model + '_' + classify + '.txt')), 'a')
 
     valid_losses, valid_fscores = [], []
     test_fscores = []
@@ -273,7 +276,7 @@ if __name__ == '__main__':
         if best_loss == None or best_loss > test_loss:  # FIXED BUG: valid_loss to test_loss
             # Save model
             try:
-                torch.save(model.state_dict(), model_path)
+                model.save_pretrained(model_path)
             except:
                 pass
             best_loss, best_label, best_pred, best_mask =\
