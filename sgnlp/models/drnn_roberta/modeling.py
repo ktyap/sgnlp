@@ -176,29 +176,29 @@ class DrnnModel(DrnnPreTrainedModel):
         
     def forward(
         self, 
-        conversations, 
+        features,  #conversations,
         lengths,
         umask,
         qmask
     ):
         
-        lengths = torch.Tensor(lengths).long()
+        # lengths = torch.Tensor(lengths).long()
         start = torch.cumsum(torch.cat((lengths.data.new(1).zero_(), lengths[:-1])), 0)
-        utterances = [sent for conv in conversations for sent in conv]
+        # utterances = [sent for conv in conversations for sent in conv]
         
-        if self.transformer_model_family == 'sbert':
-            features = torch.stack(self.model.encode(utterances, convert_to_numpy=False))  
+        # if self.transformer_model_family == 'sbert':
+        #     features = torch.stack(self.model.encode(utterances, convert_to_numpy=False))  
         
-        elif self.transformer_model_family in ['bert', 'roberta']:
-            batch = self.tokenizer(utterances, padding=True, return_tensors="pt")
-            input_ids = batch['input_ids']  #.cuda()
-            attention_mask = batch['attention_mask']  #.cuda()
-            _, features = self.model(input_ids, attention_mask, output_hidden_states=True)
-            # print(_)
-            # print(len(features))
-            if self.transformer_model_family == 'roberta':
-                features = features[:, 0, :]
-                # features = torch.mean(features, dim=1)
+        # elif self.transformer_model_family in ['bert', 'roberta']:
+        #     batch = self.tokenizer(utterances, padding=True, return_tensors="pt")
+        #     input_ids = batch['input_ids']  #.cuda()
+        #     attention_mask = batch['attention_mask']  #.cuda()
+        #     _, features = self.model(input_ids, attention_mask, output_hidden_states=True)
+        #     # print(_)
+        #     # print(len(features))
+        #     if self.transformer_model_family == 'roberta':
+        #         features = features[:, 0, :]
+        #         # features = torch.mean(features, dim=1)
             
         features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)

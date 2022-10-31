@@ -13,6 +13,7 @@ from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, classifi
 from .config import DrnnConfig
 from .modeling import DrnnModel
 from .modules import MaskedNLLLoss, SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
+from .preprocess import DrnnPreprocessor
 from .utils import configure_dataloaders
 
 
@@ -33,48 +34,6 @@ def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
     return optimizer
 
 
-# def configure_dataloaders(dataset, classify, batch_size):
-#     "Prepare dataloaders"
-#     if dataset == 'persuasion':
-#         train_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_' + classify + '_loss_mask.tsv'
-#         valid_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_' + classify + '_loss_mask.tsv'
-#         test_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_' + classify + '_loss_mask.tsv'
-#     else:
-#         train_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_loss_mask.tsv'
-#         valid_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_loss_mask.tsv'
-#         test_mask = 'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_loss_mask.tsv'
-        
-#     train_loader = DialogLoader(
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_utterances.tsv',  
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_' + classify + '.tsv',
-#         train_mask,
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_train_speakers.tsv',  
-#         batch_size,
-#         shuffle=True
-#     )
-    
-#     valid_loader = DialogLoader(
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_utterances.tsv',  
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_' + classify + '.tsv',
-#         valid_mask,
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_valid_speakers.tsv', 
-#         batch_size,
-#         shuffle=False
-#     )
-    
-#     test_loader = DialogLoader(
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_utterances.tsv',  
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_' + classify + '.tsv',
-#         test_mask,
-#         'datasets/dialogue_level_minibatch/' + dataset + '/' + dataset + '_test_speakers.tsv', 
-#         batch_size,
-#         shuffle=False
-#     )
-    
-#     return train_loader, valid_loader, test_loader
-
-
-
 def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None, train=False):
     losses, preds, labels, masks = [], [], [], []
     assert not train or optimizer!=None
@@ -84,30 +43,54 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
     else:
         model.eval()
     
+    preprocessor = DrnnPreprocessor(model.transformer_model_family,
+                    model.model,
+                    model.tokenizer)
+
+    # i = 1
+
     for conversations, label, loss_mask, speaker_mask in tqdm(dataloader, leave=False):
         if train:
             optimizer.zero_grad()
 
-        # create umask and qmask 
-        lengths = [len(item) for item in conversations]
-        umask = torch.zeros(len(lengths), max(lengths)).long()  #.cuda()
-        for j in range(len(lengths)):
-            umask[j][:lengths[j]] = 1
+        # if i == 1:
+        #     print([sent for conv in conversations for sent in conv])
+        #     i += 1
+
+        # # create umask and qmask 
+        # lengths = [len(item) for item in conversations]
+        # # if i == 2:
+        # #     print(lengths)
+        # #     i += 1
+        # umask = torch.zeros(len(lengths), max(lengths)).long()  #.cuda()
+        # for j in range(len(lengths)):
+        #     umask[j][:lengths[j]] = 1
             
-        qmask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in speaker_mask], 
-                                                batch_first=False).long()  #.cuda()
-        qmask = torch.nn.functional.one_hot(qmask)
+        # qmask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in speaker_mask], 
+        #                                         batch_first=False).long()  #.cuda()
+        # # if i == 2:
+        # #     print(qmask)
+        
+        # qmask = torch.nn.functional.one_hot(qmask)
+
+        features, lengths, umask, qmask = preprocessor(conversations, speaker_mask)
         
         # create labels and mask
         label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
                                                 batch_first=True)  #.cuda()
         
+        # if i == 1:
+        #     print(loss_mask)
+        #     i += 1
+
         loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
                                                     batch_first=True).long()  #.cuda()
-        
+        # if i == 2:
+        #     print(loss_mask)
+        #     i += 1
         
         # obtain log probabilities
-        log_prob = model(conversations, lengths, umask, qmask)
+        log_prob = model(features, lengths, umask, qmask)  #conversations, lengths, umask, qmask)
         
         # compute loss and metrics
         lp_ = log_prob.transpose(0, 1).contiguous().view(-1, log_prob.size()[2])
@@ -184,8 +167,8 @@ if __name__ == '__main__':
 
     print(args)
 
-    model_path = pathlib.Path.cwd().joinpath("drnn_roberta/temp/")
-    dataset_path = pathlib.Path.cwd().joinpath("drnn_roberta/temp/")
+    model_path = pathlib.Path(__file__).resolve().parents[0].joinpath("temp")
+    dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath("temp")
     output_path = pathlib.Path(__file__).resolve().parents[0]
     print(dataset_path)
 
