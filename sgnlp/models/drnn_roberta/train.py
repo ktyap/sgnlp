@@ -83,6 +83,8 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
         label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
                                                 batch_first=True)  #.cuda()
         
+        labels_ = label.view(-1) 
+
         # if i == 1:
         #     print(loss_mask)
         #     i += 1
@@ -94,14 +96,9 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
         #     i += 1
         
         # obtain log probabilities
-        log_prob = model(features, lengths, umask, qmask)  #conversations, lengths, umask, qmask)
+        loss, pred_ = model(features, lengths, umask, qmask, loss_function, loss_mask, labels_)  #conversations, lengths, umask, qmask)
         
-        # compute loss and metrics
-        lp_ = log_prob.transpose(0, 1).contiguous().view(-1, log_prob.size()[2])
-        labels_ = label.view(-1) 
-        loss = loss_function(lp_, labels_, loss_mask)
-
-        pred_ = torch.argmax(lp_, 1) 
+        
         preds.append(pred_.data.cpu().numpy())
         labels.append(labels_.data.cpu().numpy())
         masks.append(loss_mask.view(-1).cpu().numpy())
@@ -228,9 +225,8 @@ def train(cfg):
     config = DrnnConfig()
     model = DrnnModel(config)
 
-
-    if cfg.train_args["class-weight"]:
-        loss_function  = MaskedNLLLoss(loss_weights)  #.cuda())
+    if cfg.train_args["class_weight"]:
+        loss_function  = MaskedNLLLoss(cfg.train_args["loss_weights"])  #.cuda())
     else:
         loss_function = MaskedNLLLoss()
         

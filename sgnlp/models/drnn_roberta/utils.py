@@ -59,7 +59,10 @@ def DialogLoader(filename1, filename2, filename3, filename4, batch_size, shuffle
     return loader
 
 def configure_dataloaders(path, dataset, classify, batch_size):
-    "Prepare dataloaders"
+    """Prepare dataloaders
+
+    label index mapping = {'hap':0, 'sad':1, 'neu':2, 'ang':3, 'exc':4, 'fru':5}
+    """
     if dataset == 'persuasion':
         train_mask = pathlib.PurePath(path, 'dialogue_level_minibatch', dataset, (dataset + '_train_' + classify + '_loss_mask.tsv'))
         valid_mask = pathlib.PurePath(path, 'dialogue_level_minibatch', dataset, (dataset + '_valid_' + classify + '_loss_mask.tsv'))
@@ -110,8 +113,11 @@ def parse_args_and_load_config(config_path: str = "config/drnn_config.json"):
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default=config_path)
     args = parser.parse_args()
-    with open(pathlib.Path(__file__).parent / args.config, "r") as cfg_file:
-        cfg = json.load(cfg_file)
-    drnn_args = DrnnArguments(**cfg)
+    try:
+        with open(pathlib.Path(__file__).parent / args.config, "r") as cfg_file:
+            cfg = json.load(cfg_file)
+            drnn_args = DrnnArguments(**cfg)
+    except:
+        drnn_args = DrnnArguments()
 
     return drnn_args

@@ -35,3 +35,4 @@ class DrnnConfig(PretrainedConfig):
         self.context_attention = context_attention
         self.attention = attention
         self.residual = residual
+

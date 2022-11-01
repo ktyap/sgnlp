@@ -4,11 +4,12 @@ import torch.nn.functional as F
 from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
 from torch.nn.utils.rnn import pad_sequence
+from typing import Optional
 from .transformers import PreTrainedModel
 from .transformers import BertTokenizer, RobertaTokenizer
 from .transformers import BertForSequenceClassification, RobertaForSequenceClassification
 from .config import DrnnConfig
-from .modules import MatchingAttention, DialogueRNN
+from .modules import MaskedNLLLoss, MatchingAttention, DialogueRNN
 
 
 if False:  # torch.cuda.is_available():
@@ -32,8 +33,8 @@ class DrnnModelOutput:
         loss (:obj:`torch.FloatTensor` of shape :obj:`(1,)`, `optional`, returned when `labels` is provided ):
             Loss on relation prediction task.
     """
-    # TODO
-    pass
+    prediction: torch.Tensor
+    loss: Optional[torch.FloatTensor] = None
 
 class DrnnPreTrainedModel(PreTrainedModel):
     """
@@ -179,7 +180,10 @@ class DrnnModel(DrnnPreTrainedModel):
         features,  #conversations,
         lengths,
         umask,
-        qmask
+        qmask,
+        loss_function,
+        loss_mask,
+        label=None
     ):
         
         # lengths = torch.Tensor(lengths).long()
@@ -264,5 +268,12 @@ class DrnnModel(DrnnPreTrainedModel):
         elif self.cls_model == 'logreg':
             hidden = self.linear(features)
             log_prob = F.log_softmax(self.smax_fc(hidden), 2)
-            
-        return log_prob
+        
+        # compute loss and metrics
+        lp_ = log_prob.transpose(0, 1).contiguous().view(-1, log_prob.size()[2])
+        
+        loss = loss_function(lp_, label, loss_mask)
+
+        pred_ = torch.argmax(lp_, 1) 
+
+        return loss, pred_
