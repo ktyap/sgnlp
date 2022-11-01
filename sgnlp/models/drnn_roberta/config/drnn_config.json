@@ -1,0 +1,21 @@
+{
+    "model_folder": "model/",
+    "no_cuda": false,
+    "iemocap_dataset_path": "temp/",
+    "train_args": {
+        "epochs": 15,
+        "lr": 0.00001,
+        "weight_decay": 0.0,
+        "adam_epsilon": 0.00000001,
+        "batch-size": 1,
+        "class-weight": false,
+        "cls-model": "dialogrnn",
+        "model": "roberta",
+        "mode": "0",
+        "dataset": "iemocap",
+        "classify": "emotion",
+        "cattn": "general",
+        "attention": false,
+        "residual": true
+    }
+}

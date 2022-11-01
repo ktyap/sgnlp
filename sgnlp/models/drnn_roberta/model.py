@@ -364,6 +364,8 @@ class DialogBertTransformer(nn.Module):
             input_ids = batch['input_ids']  #.cuda()
             attention_mask = batch['attention_mask']  #.cuda()
             _, features = self.model(input_ids, attention_mask, output_hidden_states=True)
+            #print(_.shape)
+            #print(features.shape)
             if self.transformer_model_family == 'roberta':
                 features = features[:, 0, :]
                 # features = torch.mean(features, dim=1)

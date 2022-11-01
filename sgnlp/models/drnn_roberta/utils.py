@@ -1,8 +1,11 @@
+import argparse
+import json
 import pandas as pd
 import pathlib
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+from .data_class import DrnnArguments
 
 
 class UtteranceDataset(Dataset):
@@ -94,3 +97,21 @@ def configure_dataloaders(path, dataset, classify, batch_size):
     )
     
     return train_loader, valid_loader, test_loader
+
+def parse_args_and_load_config(config_path: str = "config/drnn_config.json"):
+    """Args parser helper method
+
+    Args:
+    config_path (str, optional): Defaults to "config/drnn_config.json".
+
+    Returns:
+        DrnnArguments: DrnnArguments instance with parsed args.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default=config_path)
+    args = parser.parse_args()
+    with open(pathlib.Path(__file__).parent / args.config, "r") as cfg_file:
+        cfg = json.load(cfg_file)
+    drnn_args = DrnnArguments(**cfg)
+
+    return drnn_args

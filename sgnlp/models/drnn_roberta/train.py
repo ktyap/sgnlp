@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import argparse, time, pickle
+import logging
 import pathlib
 import torch
 import torch.nn as nn
@@ -14,8 +15,11 @@ from .config import DrnnConfig
 from .modeling import DrnnModel
 from .modules import MaskedNLLLoss, SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
 from .preprocess import DrnnPreprocessor
-from .utils import configure_dataloaders
+from .utils import configure_dataloaders, parse_args_and_load_config
 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
     "Prepare optimizer"
@@ -145,27 +149,29 @@ def train_or_eval_model(model, loss_function, dataloader, epoch, optimizer=None,
     
     return avg_loss, avg_accuracy, fscores, labels, preds, masks 
 
-if __name__ == '__main__':
+def train(cfg):
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--lr', type=float, default=1e-5, metavar='LR', help='learning rate')
-    parser.add_argument('--weight_decay', default=0.0, type=float, help="Weight decay if we apply some.")
-    parser.add_argument('--adam_epsilon', default=1e-8, type=float, help="Epsilon for Adam optimizer.")
-    parser.add_argument('--batch-size', type=int, default=4, metavar='BS', help='batch size')
-    parser.add_argument('--epochs', type=int, default=30, metavar='E', help='number of epochs')
-    parser.add_argument('--class-weight', action='store_true', default=False, help='use class weight')
-    parser.add_argument('--cls-model', default='lstm', help='lstm|dialogrnn|logreg')
-    parser.add_argument('--model', default='roberta', help='which model family bert|roberta|sbert; sbert is sentence transformers')
-    parser.add_argument('--mode', default='0', help='which mode 0: bert or roberta base | 1: bert or roberta large; \
-                                                     0, 1: bert base, large sentence transformer and 2, 3: roberta base, large sentence transformer')
-    parser.add_argument('--dataset', help='which dataset iemocap|multiwoz|dailydialog|persuasion')
-    parser.add_argument('--classify', help='what to classify emotion|act|intent|er|ee')
-    parser.add_argument('--cattn', default='general', help='context attention for dialogrnn simple|general|general2')
-    parser.add_argument('--attention', action='store_true', default=False, help='use attention on top of lstm model')
-    parser.add_argument('--residual', action='store_true', default=True, help='use residual connection')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--lr', type=float, default=1e-5, metavar='LR', help='learning rate')
+    # parser.add_argument('--weight_decay', default=0.0, type=float, help="Weight decay if we apply some.")
+    # parser.add_argument('--adam_epsilon', default=1e-8, type=float, help="Epsilon for Adam optimizer.")
+    # parser.add_argument('--batch-size', type=int, default=4, metavar='BS', help='batch size')
+    # parser.add_argument('--epochs', type=int, default=30, metavar='E', help='number of epochs')
+    # parser.add_argument('--class-weight', action='store_true', default=False, help='use class weight')
+    # parser.add_argument('--cls-model', default='lstm', help='lstm|dialogrnn|logreg')
+    # parser.add_argument('--model', default='roberta', help='which model family bert|roberta|sbert; sbert is sentence transformers')
+    # parser.add_argument('--mode', default='0', help='which mode 0: bert or roberta base | 1: bert or roberta large; \
+    #                                                  0, 1: bert base, large sentence transformer and 2, 3: roberta base, large sentence transformer')
+    # parser.add_argument('--dataset', help='which dataset iemocap|multiwoz|dailydialog|persuasion')
+    # parser.add_argument('--classify', help='what to classify emotion|act|intent|er|ee')
+    # parser.add_argument('--cattn', default='general', help='context attention for dialogrnn simple|general|general2')
+    # parser.add_argument('--attention', action='store_true', default=False, help='use attention on top of lstm model')
+    # parser.add_argument('--residual', action='store_true', default=True, help='use residual connection')
+    # args = parser.parse_args()
 
-    print(args)
+    # print(args)
+
+    logger.info(f"Training arguments: {vars(cfg)}")
 
     model_path = pathlib.Path(__file__).resolve().parents[0].joinpath("temp")
     dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath("temp")
@@ -175,19 +181,19 @@ if __name__ == '__main__':
     global dataset
     global classify
     D_h = 1024  #200
-    batch_size = args.batch_size
-    n_epochs = args.epochs
-    dataset = args.dataset
-    classification_model = args.cls_model
-    transformer_model = args.model
-    transformer_mode = args.mode
-    context_attention = args.cattn
-    attention = args.attention
-    residual = args.residual
+    batch_size = cfg.train_args["batch-size"]
+    n_epochs = cfg.train_args["epochs"]
+    dataset = cfg.train_args["dataset"]
+    classification_model = cfg.train_args["cls-model"]
+    transformer_model = cfg.train_args["model"]
+    transformer_mode = cfg.train_args["mode"]
+    context_attention = cfg.train_args["cattn"]
+    attention = cfg.train_args["attention"]
+    residual = cfg.train_args["residual"]
     
     if dataset == 'iemocap':
         print ('Classifying emotion in iemocap.')
-        classify = 'emotion'
+        classify = cfg.train_args["classify"]
         n_classes  = 6
         loss_weights = torch.FloatTensor([1.0, 0.60072, 0.38066, 0.54019, 0.67924, 0.34332])
         
@@ -197,7 +203,7 @@ if __name__ == '__main__':
         n_classes  = 11
         
     elif dataset == 'persuasion':
-        classify = args.classify
+        classify = cfg.train_args["classify"]
         if classify == 'er':
             print ('Classifying persuador in Persuasion for Good.')
             n_classes  = 11
@@ -208,7 +214,7 @@ if __name__ == '__main__':
             raise ValueError('--classify must be er or ee for persuasion')
             
     elif dataset == 'dailydialog':
-        classify = args.classify
+        classify = cfg.train_args["classify"]
         if classify == 'emotion':
             print ('Classifying emotion in dailydialog.')
             n_classes  = 7
@@ -223,12 +229,12 @@ if __name__ == '__main__':
     model = DrnnModel(config)
 
 
-    if args.class_weight:
+    if cfg.train_args["class-weight"]:
         loss_function  = MaskedNLLLoss(loss_weights)  #.cuda())
     else:
         loss_function = MaskedNLLLoss()
         
-    optimizer = configure_optimizers(model, args.weight_decay, args.lr, args.adam_epsilon)
+    optimizer = configure_optimizers(model, cfg.train_args["weight_decay"], cfg.train_args["lr"], cfg.train_args["adam_epsilon"])
     # optimizer = optim.Adam(model.parameters(), lr=args.lr)
     train_loader, valid_loader, test_loader = configure_dataloaders(dataset_path, dataset, classify, batch_size)
     
@@ -322,9 +328,14 @@ if __name__ == '__main__':
         
     scores = [str(item) for item in scores]
     
-    rf.write('\t'.join(scores) + '\t' + str(args) + '\n')
+    rf.write('\t'.join(scores) + '\t' + str(cfg) + '\n')
     lf.write('\n' + str(classification_report(best_label, best_pred, sample_weight=best_mask, digits=4)) + '\n')
     lf.write(str(confusion_matrix(best_label, best_pred, sample_weight=best_mask)) + '\n')
     lf.write('-'*50 + '\n\n')
     rf.close()
     lf.close()
+
+if __name__ == "__main__":
+    cfg = parse_args_and_load_config()
+    train(cfg)
+    
