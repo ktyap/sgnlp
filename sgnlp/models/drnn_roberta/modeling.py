@@ -181,8 +181,8 @@ class DrnnModel(DrnnPreTrainedModel):
         lengths,
         umask,
         qmask,
-        loss_function,
-        loss_mask,
+        loss_function=None,
+        loss_mask=None,
         label=None
     ):
         
@@ -272,8 +272,9 @@ class DrnnModel(DrnnPreTrainedModel):
         # compute loss and metrics
         lp_ = log_prob.transpose(0, 1).contiguous().view(-1, log_prob.size()[2])
         
-        loss = loss_function(lp_, label, loss_mask)
+        if label is not None:
+            loss = loss_function(lp_, label, loss_mask)
 
         pred_ = torch.argmax(lp_, 1) 
 
-        return loss, pred_
+        return DrnnModelOutput(prediction=pred_, loss=loss)

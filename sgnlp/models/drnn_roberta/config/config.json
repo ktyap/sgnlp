@@ -1,0 +1,10 @@
+{
+    "D_h": 1024,
+    "cls_model": "dialogrnn",
+    "transformer_model_family": "roberta",
+    "mode": "0",
+    "num_classes": 6,
+    "context_attention": "general",
+    "attention": false,
+    "residual": true
+}

@@ -25,5 +25,16 @@
         "cattn": "general",
         "attention": false,
         "residual": true
+    },
+    "eval_args": {
+        "batch-size": 1,
+        "cls-model": "dialogrnn",
+        "model": "roberta",
+        "mode": "0",
+        "dataset": "iemocap",
+        "classify": "emotion",
+        "cattn": "general",
+        "attention": false,
+        "residual": true
     }
 }

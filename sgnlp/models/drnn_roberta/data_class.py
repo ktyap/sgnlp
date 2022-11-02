@@ -18,7 +18,7 @@ class DrnnArguments:
     )
     train_args: Dict[str, Any] = field(
         default_factory = lambda: {
-            "epochs": 1,
+            "epochs": 15,
             "lr": 0.00001,
             "weight_decay": 0.0,
             "adam_epsilon": 0.00000001,
@@ -42,5 +42,18 @@ class DrnnArguments:
             "residual": True,
         },
         metadata={"help": "Arguments for training."}
+    )
+    eval_args: Dict[str, Any] = field(
+        default_factory= lambda: {
+            "batch-size": 1,
+            "cls-model": "dialogrnn",
+            "model": "roberta",
+            "mode": "0",
+            "dataset": "iemocap",
+            "classify": "emotion",
+            "cattn": "general",
+            "attention": False,
+            "residual": True,
+        }
     )
 
