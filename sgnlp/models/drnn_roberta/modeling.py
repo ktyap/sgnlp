@@ -274,6 +274,8 @@ class DrnnModel(DrnnPreTrainedModel):
         
         if label is not None:
             loss = loss_function(lp_, label, loss_mask)
+        else:
+            loss = None
 
         pred_ = torch.argmax(lp_, 1) 
 

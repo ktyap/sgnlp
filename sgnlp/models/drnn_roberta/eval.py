@@ -178,9 +178,8 @@ def eval(cfg):
             raise ValueError('--classify must be emotion or act for dailydialog')
     
     #model = DialogBertTransformer(D_h, classification_model, transformer_model, transformer_mode, n_classes, context_attention, attention, residual)
-    print(pathlib.PurePath(pathlib.Path(__file__).resolve().parents[0], 'config', 'config.json'))
-    config = DrnnConfig.from_pretrained(pathlib.PurePath(pathlib.Path(__file__).resolve().parents[0], 'config', 'config.json'))
-    model = DrnnModel(config)
+    config = DrnnConfig.from_pretrained(pathlib.Path(model_path).joinpath('config.json'))
+    model = DrnnModel.from_pretrained(pretrained_model_name_or_path=pathlib.Path(model_path).joinpath(cfg.eval_args["model_name"]), config=config)
 
     # if cfg.train_args["class_weight"]:
     #     loss_function  = MaskedNLLLoss(cfg.train_args["loss_weights"])  #.cuda())
