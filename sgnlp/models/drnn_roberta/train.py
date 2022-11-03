@@ -179,22 +179,22 @@ def train(cfg):
 
     global dataset
     global classify
-    D_h = 1024  #200
+    # D_h = 1024  #200
     batch_size = cfg.train_args["batch-size"]
     n_epochs = cfg.train_args["epochs"]
     dataset = cfg.train_args["dataset"]
     classification_model = cfg.train_args["cls-model"]
     transformer_model = cfg.train_args["model"]
     transformer_mode = cfg.train_args["mode"]
-    context_attention = cfg.train_args["cattn"]
-    attention = cfg.train_args["attention"]
-    residual = cfg.train_args["residual"]
+    # context_attention = cfg.train_args["cattn"]
+    # attention = cfg.train_args["attention"]
+    # residual = cfg.train_args["residual"]
     
     if dataset == 'iemocap':
         print ('Classifying emotion in iemocap.')
         classify = cfg.train_args["classify"]
-        n_classes  = 6
-        loss_weights = torch.FloatTensor([1.0, 0.60072, 0.38066, 0.54019, 0.67924, 0.34332])
+        # n_classes  = 6
+        # loss_weights = torch.FloatTensor([1.0, 0.60072, 0.38066, 0.54019, 0.67924, 0.34332])
         
     elif dataset == 'multiwoz':
         print ('Classifying intent in multiwoz.')

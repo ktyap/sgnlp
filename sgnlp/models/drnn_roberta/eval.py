@@ -15,6 +15,7 @@ from .config import DrnnConfig
 from .modeling import DrnnModel
 from .modules import MaskedNLLLoss, SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
 from .preprocess import DrnnPreprocessor
+from .postprocess import DrnnPostprocessor
 from .utils import configure_dataloaders, parse_args_and_load_config
 
 
@@ -23,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=False):
+    # postprocessor = DrnnPostprocessor()
+    
     losses, preds, labels, masks = [], [], [], []
     assert not train or optimizer!=None
     
@@ -53,7 +56,9 @@ def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=
         # obtain log probabilities
         output = model(features, lengths, umask, qmask)  #conversations, lengths, umask, qmask)
         pred_ = output.prediction
-        
+
+        # predictions = postprocessor(output)
+        # print(predictions)
         
         preds.append(pred_.data.cpu().numpy())
         labels.append(labels_.data.cpu().numpy())
@@ -133,22 +138,22 @@ def eval(cfg):
 
     global dataset
     global classify
-    D_h = 1024  #200
+    # D_h = 1024  #200
     batch_size = cfg.train_args["batch-size"]
-    n_epochs = cfg.train_args["epochs"]
+    # n_epochs = cfg.train_args["epochs"]
     dataset = cfg.train_args["dataset"]
     classification_model = cfg.train_args["cls-model"]
     transformer_model = cfg.train_args["model"]
     transformer_mode = cfg.train_args["mode"]
-    context_attention = cfg.train_args["cattn"]
-    attention = cfg.train_args["attention"]
-    residual = cfg.train_args["residual"]
+    # context_attention = cfg.train_args["cattn"]
+    # attention = cfg.train_args["attention"]
+    # residual = cfg.train_args["residual"]
     
     if dataset == 'iemocap':
         print ('Classifying emotion in iemocap.')
         classify = cfg.train_args["classify"]
-        n_classes  = 6
-        loss_weights = torch.FloatTensor([1.0, 0.60072, 0.38066, 0.54019, 0.67924, 0.34332])
+        # n_classes  = 6
+        # loss_weights = torch.FloatTensor([1.0, 0.60072, 0.38066, 0.54019, 0.67924, 0.34332])
         
     elif dataset == 'multiwoz':
         print ('Classifying intent in multiwoz.')
@@ -217,8 +222,7 @@ def eval(cfg):
     # valid_loss, valid_acc, valid_fscore, _, _, _ = train_or_eval_model(model, loss_function, 
     #                                                                    valid_loader)
     
-    test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = train_or_eval_model(model, None,
-                                                                                                test_loader)
+    test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = train_or_eval_model(model, None, test_loader)
     
     # valid_losses.append(valid_loss)
     # valid_fscores.append(valid_fscore)
