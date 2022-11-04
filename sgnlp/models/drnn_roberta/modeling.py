@@ -63,7 +63,7 @@ class DrnnModel(DrnnPreTrainedModel):
     def __init__(self, config: DrnnConfig) -> None:
         super().__init__(config)
 
-        if torch.cuda.is_available() and not config.no_cuda:
+        if torch.cuda.is_available() and False:  #TODO: update gpu or cpu
             self.FloatTensor = torch.cuda.FloatTensor
             self.LongTensor = torch.cuda.LongTensor
             self.ByteTensor = torch.cuda.ByteTensor
