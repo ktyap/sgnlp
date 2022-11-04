@@ -260,7 +260,7 @@ class DrnnModel(DrnnPreTrainedModel):
                 att_features = torch.cat(att_features, dim=0)
                 hidden = F.relu(self.linear(att_features))
             else:
-                hidden = F.tanh(self.linear(features))
+                hidden = torch.tanh(self.linear(features))
             
             
             log_prob = F.log_softmax(self.smax_fc(hidden), 2)

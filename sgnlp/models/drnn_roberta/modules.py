@@ -91,7 +91,7 @@ class MatchingAttention(nn.Module):
             M_ = M.transpose(0,1) # batch, seqlen, mem_dim
             x_ = x.unsqueeze(1).expand(-1,M.size()[0],-1) # batch, seqlen, cand_dim
             M_x_ = torch.cat([M_,x_],2) # batch, seqlen, mem_dim+cand_dim
-            mx_a = F.tanh(self.transform(M_x_)) # batch, seqlen, alpha_dim
+            mx_a = torch.tanh(self.transform(M_x_)) # batch, seqlen, alpha_dim
             alpha = F.softmax(self.vector_prod(mx_a),1).transpose(1,2) # batch, 1, seqlen
 
         attn_pool = torch.bmm(alpha, M.transpose(0,1))[:,0,:] # batch, mem_dim
