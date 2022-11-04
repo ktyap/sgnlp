@@ -4,5 +4,5 @@ from .modules import DialogueRNNCell, DialogueRNN
 from .config import DrnnConfig
 from .preprocess import DrnnPreprocessor
 from .utils import UtteranceDataset, DialogLoader, configure_dataloaders
-#from .preprocess import DrnnPreprocessor
-#from .postprocess import DrnnPostprocessor
+from .preprocess import DrnnPreprocessor
+from .postprocess import DrnnPostprocessor

@@ -2,7 +2,6 @@ import argparse
 import json
 import pandas as pd
 import pathlib
-import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from .data_class import DrnnArguments

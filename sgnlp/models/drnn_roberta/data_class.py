@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 @dataclass
 class DrnnArguments:
     model_folder: str = field(
-        default="model/",
+        default="temp",
         metadata={"help": "Path to save pretrained weights and config"}
     )
 
@@ -13,7 +13,7 @@ class DrnnArguments:
         metadata={"help": "Option to use CPU if True"}
     )
     iemocap_dataset_path: str = field(
-        default="temp/",
+        default="datasets",
         metadata={"help": "Temporary path for IEMOCAP dataset"}
     )
     train_args: Dict[str, Any] = field(

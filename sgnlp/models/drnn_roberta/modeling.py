@@ -4,23 +4,13 @@ import torch.nn.functional as F
 from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
 from torch.nn.utils.rnn import pad_sequence
-from typing import Optional
+from typing import Optional, Union
 from .transformers import PreTrainedModel
 from .transformers import BertTokenizer, RobertaTokenizer
 from .transformers import BertForSequenceClassification, RobertaForSequenceClassification
 from .config import DrnnConfig
-from .modules import MaskedNLLLoss, MatchingAttention, DialogueRNN
+from .modules import MatchingAttention, DialogueRNN
 
-
-if False:  # torch.cuda.is_available():
-    FloatTensor = torch.cuda.FloatTensor
-    LongTensor = torch.cuda.LongTensor
-    ByteTensor = torch.cuda.ByteTensor
-
-else:
-    FloatTensor = torch.FloatTensor
-    LongTensor = torch.LongTensor
-    ByteTensor = torch.ByteTensor
 
 @dataclass
 class DrnnModelOutput:
@@ -34,7 +24,7 @@ class DrnnModelOutput:
             Loss on relation prediction task.
     """
     prediction: torch.Tensor
-    loss: Optional[torch.FloatTensor] = None
+    loss: Optional[Union[torch.FloatTensor, torch.cuda.FloatTensor]] = None
 
 class DrnnPreTrainedModel(PreTrainedModel):
     """
@@ -72,6 +62,16 @@ class DrnnModel(DrnnPreTrainedModel):
     """
     def __init__(self, config: DrnnConfig) -> None:
         super().__init__(config)
+
+        if torch.cuda.is_available() and not config.no_cuda:
+            self.FloatTensor = torch.cuda.FloatTensor
+            self.LongTensor = torch.cuda.LongTensor
+            self.ByteTensor = torch.cuda.ByteTensor
+
+        else:
+            self.FloatTensor = torch.FloatTensor
+            self.LongTensor = torch.LongTensor
+            self.ByteTensor = torch.ByteTensor
         
         if config.transformer_model_family == 'bert':
             if config.mode == '0':
@@ -185,30 +185,14 @@ class DrnnModel(DrnnPreTrainedModel):
         loss_mask=None,
         label=None
     ):
-        
-        # lengths = torch.Tensor(lengths).long()
+
         start = torch.cumsum(torch.cat((lengths.data.new(1).zero_(), lengths[:-1])), 0)
-        # utterances = [sent for conv in conversations for sent in conv]
-        
-        # if self.transformer_model_family == 'sbert':
-        #     features = torch.stack(self.model.encode(utterances, convert_to_numpy=False))  
-        
-        # elif self.transformer_model_family in ['bert', 'roberta']:
-        #     batch = self.tokenizer(utterances, padding=True, return_tensors="pt")
-        #     input_ids = batch['input_ids']  #.cuda()
-        #     attention_mask = batch['attention_mask']  #.cuda()
-        #     _, features = self.model(input_ids, attention_mask, output_hidden_states=True)
-        #     # print(_)
-        #     # print(len(features))
-        #     if self.transformer_model_family == 'roberta':
-        #         features = features[:, 0, :]
-        #         # features = torch.mean(features, dim=1)
             
         features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         
         umask = umask  #.cuda()
-        mask = umask.unsqueeze(-1).type(FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
+        mask = umask.unsqueeze(-1).type(self.FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
         mask = mask.transpose(0, 1) # (batch, num_utt, 1) -> (num_utt, batch, 1)
         mask = mask.repeat(1, 1, 2*self.D_h) #  (num_utt, batch, 1) -> (num_utt, batch, output_size)
         
@@ -240,8 +224,6 @@ class DrnnModel(DrnnPreTrainedModel):
             hidden_b, alpha_b = self.dialog_rnn_r(rev_features, rev_qmask)
             hidden_b = self._reverse_seq(hidden_b, umask)
             
-            # hidden_f = self.dropout_rec(hidden_f)
-            # hidden_b = self.dropout_rec(hidden_b)
             hidden = torch.cat([hidden_f, hidden_b],dim=-1)
             hidden = self.dropout_rec(hidden)
              

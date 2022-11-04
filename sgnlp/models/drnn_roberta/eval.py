@@ -1,19 +1,16 @@
 import numpy as np
 from tqdm import tqdm
-import argparse, time, pickle
+import time
 import logging
 import pathlib
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import AdamW
-#from .dataloader import DialogLoader
-#from .model import DialogBertTransformer, MaskedNLLLoss
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, classification_report
 
 from .config import DrnnConfig
 from .modeling import DrnnModel
-from .modules import MaskedNLLLoss, SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
 from .preprocess import DrnnPreprocessor
 from .postprocess import DrnnPostprocessor
 from .utils import configure_dataloaders, parse_args_and_load_config
@@ -39,8 +36,6 @@ def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=
                     model.tokenizer)
 
     for conversations, label, loss_mask, speaker_mask in tqdm(dataloader, leave=False):
-        # if train:
-        #     optimizer.zero_grad()
 
         features, lengths, umask, qmask = preprocessor(conversations, speaker_mask)
         
@@ -63,11 +58,6 @@ def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=
         preds.append(pred_.data.cpu().numpy())
         labels.append(labels_.data.cpu().numpy())
         masks.append(loss_mask.view(-1).cpu().numpy())
-
-        # losses.append(loss.item()*masks[-1].sum())
-        # if train:
-        #     loss.backward()
-        #     optimizer.step()
 
     if preds!=[]:
         preds  = np.concatenate(preds)
@@ -109,45 +99,20 @@ def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=
 
 def eval(cfg):
 
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--lr', type=float, default=1e-5, metavar='LR', help='learning rate')
-    # parser.add_argument('--weight_decay', default=0.0, type=float, help="Weight decay if we apply some.")
-    # parser.add_argument('--adam_epsilon', default=1e-8, type=float, help="Epsilon for Adam optimizer.")
-    # parser.add_argument('--batch-size', type=int, default=4, metavar='BS', help='batch size')
-    # parser.add_argument('--epochs', type=int, default=30, metavar='E', help='number of epochs')
-    # parser.add_argument('--class-weight', action='store_true', default=False, help='use class weight')
-    # parser.add_argument('--cls-model', default='lstm', help='lstm|dialogrnn|logreg')
-    # parser.add_argument('--model', default='roberta', help='which model family bert|roberta|sbert; sbert is sentence transformers')
-    # parser.add_argument('--mode', default='0', help='which mode 0: bert or roberta base | 1: bert or roberta large; \
-    #                                                  0, 1: bert base, large sentence transformer and 2, 3: roberta base, large sentence transformer')
-    # parser.add_argument('--dataset', help='which dataset iemocap|multiwoz|dailydialog|persuasion')
-    # parser.add_argument('--classify', help='what to classify emotion|act|intent|er|ee')
-    # parser.add_argument('--cattn', default='general', help='context attention for dialogrnn simple|general|general2')
-    # parser.add_argument('--attention', action='store_true', default=False, help='use attention on top of lstm model')
-    # parser.add_argument('--residual', action='store_true', default=True, help='use residual connection')
-    # args = parser.parse_args()
-
-    # print(args)
-
     logger.info(f"Training arguments: {vars(cfg)}")
 
-    model_path = pathlib.Path(__file__).resolve().parents[0].joinpath("temp")
-    dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath("datasets")
+    model_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.model_path)
+    dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.datasets)
     output_path = pathlib.Path(__file__).resolve().parents[0]
-    # print(dataset_path)
 
     global dataset
     global classify
     # D_h = 1024  #200
     batch_size = cfg.train_args["batch-size"]
-    # n_epochs = cfg.train_args["epochs"]
     dataset = cfg.train_args["dataset"]
     classification_model = cfg.train_args["cls-model"]
     transformer_model = cfg.train_args["model"]
     transformer_mode = cfg.train_args["mode"]
-    # context_attention = cfg.train_args["cattn"]
-    # attention = cfg.train_args["attention"]
-    # residual = cfg.train_args["residual"]
     
     if dataset == 'iemocap':
         print ('Classifying emotion in iemocap.')
@@ -182,18 +147,10 @@ def eval(cfg):
         else:
             raise ValueError('--classify must be emotion or act for dailydialog')
     
-    #model = DialogBertTransformer(D_h, classification_model, transformer_model, transformer_mode, n_classes, context_attention, attention, residual)
     config = DrnnConfig.from_pretrained(pathlib.Path(model_path).joinpath('config.json'))
     model = DrnnModel.from_pretrained(pretrained_model_name_or_path=pathlib.Path(model_path).joinpath(cfg.eval_args["model_name"]), config=config)
 
-    # if cfg.train_args["class_weight"]:
-    #     loss_function  = MaskedNLLLoss(cfg.train_args["loss_weights"])  #.cuda())
-    # else:
-    #     loss_function = MaskedNLLLoss()
-        
-    # optimizer = configure_optimizers(model, cfg.train_args["weight_decay"], cfg.train_args["lr"], cfg.train_args["adam_epsilon"])
-    # optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    train_loader, valid_loader, test_loader = configure_dataloaders(dataset_path, dataset, classify, batch_size)
+    _, _, test_loader = configure_dataloaders(dataset_path, dataset, classify, batch_size)
     
     if not pathlib.Path(pathlib.PurePath(output_path, 'logs')).exists():
         pathlib.Path(pathlib.PurePath(output_path, 'logs')).mkdir(parents=False, exist_ok=True)
@@ -213,14 +170,7 @@ def eval(cfg):
     test_fscores = []
     best_loss, best_label, best_pred, best_mask = None, None, None, None
 
-    #for e in range(n_epochs):
-
     start_time = time.time()
-    # train_loss, train_acc, train_fscore, _, _, _ = train_or_eval_model(model, loss_function,
-    #                                                                    train_loader, optimizer, True)
-    
-    # valid_loss, valid_acc, valid_fscore, _, _, _ = train_or_eval_model(model, loss_function, 
-    #                                                                    valid_loader)
     
     test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = train_or_eval_model(model, None, test_loader)
     
@@ -229,17 +179,12 @@ def eval(cfg):
     test_fscores.append(test_fscore)
     
     if best_loss == None or best_loss > test_loss:  # FIXED BUG: valid_loss to test_loss
-        # # Save model
-        # try:
-        #     model.save_pretrained(model_path)
-        # except:
-        #     pass
         best_loss, best_label, best_pred, best_mask =\
                 test_loss, test_label, test_pred, test_mask  # FIXED BUG: valid_loss to test_loss
     
     x = 'test_loss {} test_acc {} test_fscore {} time {}'.\
             format(test_loss, test_acc, test_fscore, round(time.time()-start_time, 2))
-    print (x)
+    print(x)
     lf.write(x + '\n')
         
     # valid_fscores = np.array(valid_fscores).transpose()

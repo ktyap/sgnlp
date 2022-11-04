@@ -1,19 +1,17 @@
 import numpy as np
 from tqdm import tqdm
-import argparse, time, pickle
+import time
 import logging
 import pathlib
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import AdamW
-#from .dataloader import DialogLoader
-#from .model import DialogBertTransformer, MaskedNLLLoss
 from sklearn.metrics import f1_score, confusion_matrix, accuracy_score, classification_report
 
 from .config import DrnnConfig
 from .modeling import DrnnModel
-from .modules import MaskedNLLLoss, SimpleAttention, MatchingAttention, DialogueRNNCell, DialogueRNN
+from .modules import MaskedNLLLoss
 from .preprocess import DrnnPreprocessor
 from .utils import configure_dataloaders, parse_args_and_load_config
 
@@ -51,31 +49,9 @@ def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=
                     model.model,
                     model.tokenizer)
 
-    # i = 1
-
     for conversations, label, loss_mask, speaker_mask in tqdm(dataloader, leave=False):
         if train:
             optimizer.zero_grad()
-
-        # if i == 1:
-        #     print([sent for conv in conversations for sent in conv])
-        #     i += 1
-
-        # # create umask and qmask 
-        # lengths = [len(item) for item in conversations]
-        # # if i == 2:
-        # #     print(lengths)
-        # #     i += 1
-        # umask = torch.zeros(len(lengths), max(lengths)).long()  #.cuda()
-        # for j in range(len(lengths)):
-        #     umask[j][:lengths[j]] = 1
-            
-        # qmask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in speaker_mask], 
-        #                                         batch_first=False).long()  #.cuda()
-        # # if i == 2:
-        # #     print(qmask)
-        
-        # qmask = torch.nn.functional.one_hot(qmask)
 
         features, lengths, umask, qmask = preprocessor(conversations, speaker_mask)
         
@@ -85,18 +61,11 @@ def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=
         
         labels_ = label.view(-1) 
 
-        # if i == 1:
-        #     print(loss_mask)
-        #     i += 1
-
         loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
                                                     batch_first=True).long()  #.cuda()
-        # if i == 2:
-        #     print(loss_mask)
-        #     i += 1
+
         
         # obtain log probabilities
-        # loss, pred_ = model(features, lengths, umask, qmask, loss_function, loss_mask, labels_)  #conversations, lengths, umask, qmask)
         output = model(features, lengths, umask, qmask, loss_function, loss_mask, labels_)  #conversations, lengths, umask, qmask)
         loss, pred_ = output.loss, output.prediction
         
@@ -150,30 +119,10 @@ def train_or_eval_model(model, loss_function, dataloader, optimizer=None, train=
 
 def train(cfg):
 
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--lr', type=float, default=1e-5, metavar='LR', help='learning rate')
-    # parser.add_argument('--weight_decay', default=0.0, type=float, help="Weight decay if we apply some.")
-    # parser.add_argument('--adam_epsilon', default=1e-8, type=float, help="Epsilon for Adam optimizer.")
-    # parser.add_argument('--batch-size', type=int, default=4, metavar='BS', help='batch size')
-    # parser.add_argument('--epochs', type=int, default=30, metavar='E', help='number of epochs')
-    # parser.add_argument('--class-weight', action='store_true', default=False, help='use class weight')
-    # parser.add_argument('--cls-model', default='lstm', help='lstm|dialogrnn|logreg')
-    # parser.add_argument('--model', default='roberta', help='which model family bert|roberta|sbert; sbert is sentence transformers')
-    # parser.add_argument('--mode', default='0', help='which mode 0: bert or roberta base | 1: bert or roberta large; \
-    #                                                  0, 1: bert base, large sentence transformer and 2, 3: roberta base, large sentence transformer')
-    # parser.add_argument('--dataset', help='which dataset iemocap|multiwoz|dailydialog|persuasion')
-    # parser.add_argument('--classify', help='what to classify emotion|act|intent|er|ee')
-    # parser.add_argument('--cattn', default='general', help='context attention for dialogrnn simple|general|general2')
-    # parser.add_argument('--attention', action='store_true', default=False, help='use attention on top of lstm model')
-    # parser.add_argument('--residual', action='store_true', default=True, help='use residual connection')
-    # args = parser.parse_args()
-
-    # print(args)
-
     logger.info(f"Training arguments: {vars(cfg)}")
 
-    model_path = pathlib.Path(__file__).resolve().parents[0].joinpath("temp")
-    dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath("datasets")
+    model_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.model_folder)
+    dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.iemocap_dataset_path)
     output_path = pathlib.Path(__file__).resolve().parents[0]
     # print(dataset_path)
 
