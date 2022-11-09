@@ -23,7 +23,8 @@ def eval_model(model, dataloader, no_cuda=False):
     
     preprocessor = DialogueRNNPreprocessor(model.transformer_model_family,
                     model.model,
-                    model.tokenizer)
+                    model.tokenizer,
+                    no_cuda)
 
     for conversations, label, loss_mask, speaker_mask in tqdm(dataloader, leave=False):
 
@@ -46,7 +47,7 @@ def eval_model(model, dataloader, no_cuda=False):
         labels_ = label.view(-1) 
 
         # obtain log probabilities
-        output = model(features, lengths, umask, qmask)
+        output = model(features, lengths, umask, qmask, None, None, None, no_cuda)
         pred_ = output.prediction
         
         preds.append(pred_.data.cpu().numpy())
