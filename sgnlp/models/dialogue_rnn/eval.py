@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def eval_model(model, dataloader):
+def eval_model(model, dataloader, no_cuda=False):
     
     losses, preds, labels, masks = [], [], [], []
     
@@ -30,14 +30,21 @@ def eval_model(model, dataloader):
         features, lengths, umask, qmask = preprocessor(conversations, speaker_mask)
         
         # create labels and mask
-        label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
+        if no_cuda:
+            label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
                                                 batch_first=True)  #.cuda()
+
+            loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
+                                                    batch_first=True).long()  #.cuda()
+        else:
+            label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
+                                                batch_first=True).cuda()
+
+            loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
+                                                    batch_first=True).long().cuda()
         
         labels_ = label.view(-1) 
 
-        loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
-                                                    batch_first=True).long()  #.cuda()
-        
         # obtain log probabilities
         output = model(features, lengths, umask, qmask)
         pred_ = output.prediction
@@ -142,6 +149,11 @@ def eval(cfg):
     config = DialogueRNNConfig.from_pretrained(pathlib.Path(model_path).joinpath('config.json'))
     model = DialogueRNNModel.from_pretrained(pretrained_model_name_or_path=pathlib.Path(model_path).joinpath(cfg.eval_args["model_name"]), config=config)
 
+    if not cfg.no_cuda:
+        model.to('cuda')
+    else:
+        model.to('cpu')
+
     _, _, test_loader = configure_dataloaders(dataset_path, dataset, classify, batch_size)
 
     if cfg.save_eval_res:
@@ -150,7 +162,7 @@ def eval(cfg):
 
     start_time = time.time()
     
-    test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = eval_model(model, test_loader)
+    test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = eval_model(model, test_loader, cfg.no_cuda)
     
     x = 'test_loss {} test_acc {} test_fscore {} time {}'.\
             format(test_loss, test_acc, test_fscore, round(time.time()-start_time, 2))

@@ -8,7 +8,7 @@ class DialogueRNNArguments:
         metadata={"help": "Path to save pretrained weights and config"}
     )
     no_cuda: bool = field(
-        default=False,
+        default=True,
         metadata={"help": "Option to use CPU if True"}
     )
     save_train_res: bool = field(

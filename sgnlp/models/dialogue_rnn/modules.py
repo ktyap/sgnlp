@@ -167,7 +167,10 @@ class DialogueRNNCell(nn.Module):
         else:
             ql_ = q0
         qmask_ = qmask.unsqueeze(2)
-        q_ = ql_*(1-qmask_) + qs_*qmask_
+        if U.is_cuda:
+            q_ = ql_*(1-qmask_.cuda()) + qs_*qmask_.cuda()
+        else:
+            q_ = ql_*(1-qmask_) + qs_*qmask_
         e0 = torch.zeros(qmask.size()[0], self.D_e).type(U.type()) if e0.size()[0]==0\
                 else e0
         e_ = self.e_cell(self._select_parties(q_,qm_idx), e0)

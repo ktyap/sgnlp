@@ -5,10 +5,11 @@ class DialogueRNNPreprocessor:
     """Class to initialise the Preprocessor for DialogueRNNModel.
     Preprocesses inputs and tokenises them so they can be used with DialogueRNNModel.
     """
-    def __init__(self, transformer_model_family, transformer_model, tokenizer=None):
+    def __init__(self, transformer_model_family, transformer_model, tokenizer=None, no_cuda=False):
         self.transformer_model_family = transformer_model_family
         self.model = transformer_model
         self.tokenizer = tokenizer
+        self.no_cuda = no_cuda
 
     def __call__(self, conversations, speaker_mask):
         # create umask and qmasks
@@ -36,8 +37,13 @@ class DialogueRNNPreprocessor:
         
         elif self.transformer_model_family in ['bert', 'roberta']:
             batch = self.tokenizer(utterances, padding=True, return_tensors="pt")
-            input_ids = batch['input_ids']  #.cuda()
-            attention_mask = batch['attention_mask']  #.cuda()
+            if self.no_cuda:
+                input_ids = batch['input_ids']  #.cuda()
+                attention_mask = batch['attention_mask']  #.cuda()
+            else:
+                input_ids = batch['input_ids'].cuda()
+                attention_mask = batch['attention_mask'].cuda()
+                
             _, features = self.model(input_ids, attention_mask, output_hidden_states=True)
 
             if self.transformer_model_family == 'roberta':

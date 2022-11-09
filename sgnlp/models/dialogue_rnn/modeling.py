@@ -57,15 +57,15 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
     def __init__(self, config: DialogueRNNConfig) -> None:
         super().__init__(config)
 
-        if torch.cuda.is_available() and False:  #TODO: update gpu or cpu
-            self.FloatTensor = torch.cuda.FloatTensor
-            self.LongTensor = torch.cuda.LongTensor
-            self.ByteTensor = torch.cuda.ByteTensor
+        # if torch.cuda.is_available() and True:  #TODO: update gpu or cpu
+        #     self.FloatTensor = torch.cuda.FloatTensor
+        #     self.LongTensor = torch.cuda.LongTensor
+        #     self.ByteTensor = torch.cuda.ByteTensor
 
-        else:
-            self.FloatTensor = torch.FloatTensor
-            self.LongTensor = torch.LongTensor
-            self.ByteTensor = torch.ByteTensor
+        # else:
+        #     self.FloatTensor = torch.FloatTensor
+        #     self.LongTensor = torch.LongTensor
+        #     self.ByteTensor = torch.ByteTensor
         
         if config.transformer_model_family == 'bert':
             if config.mode == '0':
@@ -177,16 +177,25 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
         qmask,
         loss_function=None,
         loss_mask=None,
-        label=None
+        label=None,
+        no_cuda=False
     ):
 
         start = torch.cumsum(torch.cat((lengths.data.new(1).zero_(), lengths[:-1])), 0)
-            
-        features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
+        
+        if no_cuda:
+            features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
+                                for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
+        else:
+            features = torch.stack([self.pad(features.narrow(0, s, l).cuda(), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         
-        umask = umask  #.cuda()
-        mask = umask.unsqueeze(-1).type(self.FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
+        if no_cuda:
+            # umask = umask  #.cuda()
+            mask = umask.unsqueeze(-1).type(torch.FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
+        else:
+            umask = umask.cuda()
+            mask = umask.unsqueeze(-1).type(torch.cuda.FloatTensor) # (batch, num_utt) -> (batch, num_utt, 1)
         mask = mask.transpose(0, 1) # (batch, num_utt, 1) -> (num_utt, batch, 1)
         mask = mask.repeat(1, 1, 2*self.D_h) #  (num_utt, batch, 1) -> (num_utt, batch, output_size)
         
@@ -212,7 +221,11 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
             log_prob = F.log_softmax(self.smax_fc(hidden), 2)
             
         elif self.cls_model == 'dialogrnn':
-            hidden_f, alpha_f = self.dialog_rnn_f(features, qmask)
+            if no_cuda:
+                hidden_f, alpha_f = self.dialog_rnn_f(features, qmask)
+            else:
+                hidden_f, alpha_f = self.dialog_rnn_f(features.cuda(), qmask.cuda())
+
             rev_features = self._reverse_seq(features, umask)
             rev_qmask = self._reverse_seq(qmask, umask)
             hidden_b, alpha_b = self.dialog_rnn_r(rev_features, rev_qmask)

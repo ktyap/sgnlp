@@ -1,6 +1,6 @@
 {
     "model_folder": "model/",
-    "no_cuda": false,
+    "no_cuda": true,
     "iemocap_dataset_path": "datasets/",
     "save_train_res": true,
     "save_eval_res": true,

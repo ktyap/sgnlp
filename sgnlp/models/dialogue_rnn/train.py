@@ -34,7 +34,7 @@ def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
     return optimizer
 
 
-def train_model(model, dataloader, loss_function, optimizer=None, train=False):
+def train_model(model, dataloader, loss_function, optimizer=None, train=False, no_cuda=False):
     """Run training and evaluation using training and validation sets.
 
     Args:
@@ -43,6 +43,7 @@ def train_model(model, dataloader, loss_function, optimizer=None, train=False):
         loss_function (MaskedNLLLoss): MaskedNLLLoss
         optimizer (AdamW, optional): Optimizer
         train (bool, optional): Train if True. Defaults to False.
+        no_cuda (bool, optional): Use CPU for training if True. Defaults to False.
     """
     losses, preds, labels, masks = [], [], [], []
     assert not train or optimizer!=None
@@ -55,7 +56,8 @@ def train_model(model, dataloader, loss_function, optimizer=None, train=False):
     preprocessor = DialogueRNNPreprocessor(
                     model.transformer_model_family,
                     model.model,
-                    model.tokenizer)
+                    model.tokenizer,
+                    no_cuda)
 
     for conversations, label, loss_mask, speaker_mask in tqdm(dataloader, leave=False):
         if train:
@@ -64,17 +66,24 @@ def train_model(model, dataloader, loss_function, optimizer=None, train=False):
         features, lengths, umask, qmask = preprocessor(conversations, speaker_mask)
         
         # create labels and mask
-        label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
-                                                batch_first=True)  #.cuda()
+        if no_cuda:
+            label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
+                                                    batch_first=True)  #.cuda()
+
+            loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
+                                                        batch_first=True).long()  #.cuda()
+        else:
+            label = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in label], 
+                                                    batch_first=True).cuda()
+
+            loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
+                                                        batch_first=True).long().cuda()
         
         labels_ = label.view(-1) 
 
-        loss_mask = torch.nn.utils.rnn.pad_sequence([torch.tensor(item) for item in loss_mask], 
-                                                    batch_first=True).long()  #.cuda()
-
         
         # obtain log probabilities
-        output = model(features, lengths, umask, qmask, loss_function, loss_mask, labels_)
+        output = model(features, lengths, umask, qmask, loss_function, loss_mask, labels_, no_cuda)
         loss, pred_ = output.loss, output.prediction
         
         
@@ -184,8 +193,17 @@ def train(cfg):
     config = DialogueRNNConfig()
     model = DialogueRNNModel(config)
 
+    if not cfg.no_cuda:
+        model.to('cuda')
+    else:
+        model.to('cpu')
+
+
     if cfg.train_args["class_weight"]:
-        loss_function  = MaskedNLLLoss(cfg.train_args["loss_weights"])  #.cuda())
+        if cfg.no_cuda:
+            loss_function  = MaskedNLLLoss(cfg.train_args["loss_weights"])  #.cuda())
+        else:
+            loss_function  = MaskedNLLLoss(cfg.train_args["loss_weights"].cuda())
     else:
         loss_function = MaskedNLLLoss()
         
@@ -202,9 +220,9 @@ def train(cfg):
 
     for e in range(n_epochs):
         start_time = time.time()
-        train_loss, train_acc, train_fscore, _, _, _ = train_model(model, train_loader, loss_function, optimizer, True)
+        train_loss, train_acc, train_fscore, _, _, _ = train_model(model, train_loader, loss_function, optimizer, True, cfg.no_cuda)
         
-        valid_loss, valid_acc, valid_fscore, valid_label, valid_pred, valid_mask = train_model(model, valid_loader, loss_function)
+        valid_loss, valid_acc, valid_fscore, valid_label, valid_pred, valid_mask = train_model(model, valid_loader, loss_function, None, False, cfg.no_cuda)
         
         valid_losses.append(valid_loss)
         valid_fscores.append(valid_fscore)
