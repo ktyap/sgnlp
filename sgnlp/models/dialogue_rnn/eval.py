@@ -143,37 +143,14 @@ def eval(cfg):
     model = DialogueRNNModel.from_pretrained(pretrained_model_name_or_path=pathlib.Path(model_path).joinpath(cfg.eval_args["model_name"]), config=config)
 
     _, _, test_loader = configure_dataloaders(dataset_path, dataset, classify, batch_size)
-    
-    # if not pathlib.Path(pathlib.PurePath(output_path, 'logs')).exists():
-    #     pathlib.Path(pathlib.PurePath(output_path, 'logs')).mkdir(parents=False, exist_ok=True)
-    # else:
-    #     pass
+
     if cfg.save_eval_res:
         lf = open(pathlib.PurePath(output_path, (dataset + '_' + transformer_model + '_mode_' + transformer_mode 
             + '_' + classification_model + '_' + classify + '_test.txt')), 'a')
 
-    # if not pathlib.Path(pathlib.PurePath(output_path, 'results')).exists():
-    #     pathlib.Path(pathlib.PurePath(output_path, 'results')).mkdir(parents=False, exist_ok=True)
-    # else:
-    #     pass
-    # rf = open(pathlib.PurePath(output_path, 'results', (dataset + '_' + transformer_model + '_mode_' + transformer_mode 
-    #           + '_' + classification_model + '_' + classify + '.txt')), 'a')
-
-    # valid_losses, valid_fscores = [], []
-    # test_fscores = []
-    # best_loss, best_label, best_pred, best_mask = None, None, None, None
-
     start_time = time.time()
     
     test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = eval_model(model, test_loader)
-    
-    # valid_losses.append(valid_loss)
-    # valid_fscores.append(valid_fscore)
-    # test_fscores.append(test_fscore)
-    
-    # if best_loss == None or best_loss > test_loss:
-    #     best_loss, best_label, best_pred, best_mask =\
-    #             test_loss, test_label, test_pred, test_mask
     
     x = 'test_loss {} test_acc {} test_fscore {} time {}'.\
             format(test_loss, test_acc, test_fscore, round(time.time()-start_time, 2))
@@ -182,59 +159,6 @@ def eval(cfg):
 
     if cfg.save_eval_res:
         lf.write(x + '\n')
-        
-    # valid_fscores = np.array(valid_fscores).transpose()
-    # test_fscores = np.array(test_fscores).transpose()        
-        
-    # print('Test performance.')
-    # if dataset == 'dailydialog' and classify =='emotion':  
-    #     score1 = test_fscores[0][np.argmin(valid_losses)]
-    #     score2 = test_fscores[0][np.argmax(valid_fscores[0])]
-    #     score3 = test_fscores[1][np.argmin(valid_losses)]
-    #     score4 = test_fscores[1][np.argmax(valid_fscores[1])]
-    #     score5 = test_fscores[2][np.argmin(valid_losses)]
-    #     score6 = test_fscores[2][np.argmax(valid_fscores[2])]
-    #     score7 = test_fscores[3][np.argmin(valid_losses)]
-    #     score8 = test_fscores[3][np.argmax(valid_fscores[3])]
-    #     score9 = test_fscores[4][np.argmin(valid_losses)]
-    #     score10 = test_fscores[4][np.argmax(valid_fscores[4])]
-    #     score11 = test_fscores[5][np.argmin(valid_losses)]
-    #     score12 = test_fscores[5][np.argmax(valid_fscores[5])]
-        
-    #     scores = [score1, score2, score3, score4, score5, score6, 
-    #               score7, score8, score9, score10, score11, score12]
-    #     scores_val_loss = [score1, score3, score5, score7, score9, score11]
-    #     scores_val_f1 = [score2, score4, score6, score8, score10, score12]
-        
-    #     print ('Scores: Weighted, Weighted w/o Neutral, Micro, Micro w/o Neutral, Macro, Macro w/o Neutral')
-    #     print('F1@Best Valid Loss: {}'.format(scores_val_loss))
-    #     print('F1@Best Valid F1: {}'.format(scores_val_f1))
-        
-    # elif (dataset=='dailydialog' and classify=='act') or (dataset=='persuasion'):  
-    #     score1 = test_fscores[0][np.argmin(valid_losses)]
-    #     score2 = test_fscores[0][np.argmax(valid_fscores[0])]
-    #     score3 = test_fscores[1][np.argmin(valid_losses)]
-    #     score4 = test_fscores[1][np.argmax(valid_fscores[1])]
-    #     score5 = test_fscores[2][np.argmin(valid_losses)]
-    #     score6 = test_fscores[2][np.argmax(valid_fscores[2])]
-        
-    #     scores = [score1, score2, score3, score4, score5, score6]
-    #     scores_val_loss = [score1, score3, score5]
-    #     scores_val_f1 = [score2, score4, score6]
-        
-    #     print ('Scores: Weighted, Micro, Macro')
-    #     print('F1@Best Valid Loss: {}'.format(scores_val_loss))
-    #     print('F1@Best Valid F1: {}'.format(scores_val_f1))
-        
-    # else:
-    #     score1 = test_fscores[0][np.argmin(valid_losses)]
-    #     score2 = test_fscores[0][np.argmax(valid_fscores[0])]
-    #     scores = [score1, score2]
-    #     print('F1@Best Valid Loss: {}; F1@Best Valid F1: {}'.format(score1, score2))
-        
-    # scores = [str(item) for item in scores]
-    
-    # rf.write('\t'.join(scores) + '\t' + str(cfg) + '\n')
 
     if cfg.save_eval_res:
         lf.write(str(cfg) + '\n')
@@ -242,10 +166,17 @@ def eval(cfg):
         lf.write('\n' + str(classification_report(test_label, test_pred, sample_weight=test_mask, digits=4)) + '\n')
         lf.write(str(confusion_matrix(test_label, test_pred, sample_weight=test_mask)) + '\n')
         lf.write('-'*50 + '\n\n')
-        #rf.close()
         lf.close()
 
 if __name__ == "__main__":
+    """Calls the eval method with a pretrained model using test sets.
+
+    Example::
+        To run with default parameters:
+        python -m eval
+        To run with custom training config:
+        python -m train --config config/dialogueRNN_config.json
+    """
     cfg = parse_args_and_load_config()
     eval(cfg)
     

@@ -4,21 +4,13 @@ import torch
 class DialogueRNNPreprocessor:
     """Class to initialise the Preprocessor for DialogueRNNModel.
     Preprocesses inputs and tokenises them so they can be used with DialogueRNNModel.
-
-    Args:
-
-    Returns:
-        features:
-        lengths:
-        umask:
-        qmask:
     """
     def __init__(self, transformer_model_family, transformer_model, tokenizer=None):
         self.transformer_model_family = transformer_model_family
         self.model = transformer_model
         self.tokenizer = tokenizer
 
-    def __call__(self, conversations, speaker_mask):  #loss_mask, speaker_mask):
+    def __call__(self, conversations, speaker_mask):
         # create umask and qmasks
         lengths = [len(item) for item in conversations]
 

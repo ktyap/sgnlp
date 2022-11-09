@@ -34,18 +34,15 @@ def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
     return optimizer
 
 
-def train_or_eval_model(model, dataloader, loss_function=None, optimizer=None, train=False):
+def train_model(model, dataloader, loss_function, optimizer=None, train=False):
     """Run training and evaluation using training and validation sets.
 
     Args:
-        model (_type_): _description_
-        dataloader (_type_): _description_
-        loss_function (_type_, optional): _description_. Defaults to None.
-        optimizer (_type_, optional): _description_. Defaults to None.
-        train (bool, optional): _description_. Defaults to False.
-
-    Returns:
-        _type_: _description_
+        model (DialogueRNNModel): DialogueRNNModel
+        dataloader (DataLoader): Dataloader for IEMOCAP dataset
+        loss_function (MaskedNLLLoss): MaskedNLLLoss
+        optimizer (AdamW, optional): Optimizer
+        train (bool, optional): Train if True. Defaults to False.
     """
     losses, preds, labels, masks = [], [], [], []
     assert not train or optimizer!=None
@@ -195,20 +192,9 @@ def train(cfg):
     optimizer = configure_optimizers(model, cfg.train_args["weight_decay"], cfg.train_args["lr"], cfg.train_args["adam_epsilon"])
     train_loader, valid_loader, test_loader = configure_dataloaders(dataset_path, dataset, classify, batch_size)
     
-    # if not pathlib.Path(pathlib.PurePath(output_path, 'logs')).exists():
-    #     pathlib.Path(pathlib.PurePath(output_path, 'logs')).mkdir(parents=False, exist_ok=True)
-    # else:
-    #     pass
     if cfg.save_train_res:
         lf = open(pathlib.PurePath(output_path, (dataset + '_' + transformer_model + '_mode_' + transformer_mode 
             + '_' + classification_model + '_' + classify + '_train.txt')), 'a')
-
-    # if not pathlib.Path(pathlib.PurePath(output_path, 'results')).exists():
-    #     pathlib.Path(pathlib.PurePath(output_path, 'results')).mkdir(parents=False, exist_ok=True)
-    # else:
-    #     pass
-    # rf = open(pathlib.PurePath(output_path, 'results', (dataset + '_' + transformer_model + '_mode_' + transformer_mode 
-    #           + '_' + classification_model + '_' + classify + '.txt')), 'a')
 
     valid_losses, valid_fscores = [], []
     # test_fscores = []
@@ -216,15 +202,12 @@ def train(cfg):
 
     for e in range(n_epochs):
         start_time = time.time()
-        train_loss, train_acc, train_fscore, _, _, _ = train_or_eval_model(model, train_loader, loss_function, optimizer, True)
+        train_loss, train_acc, train_fscore, _, _, _ = train_model(model, train_loader, loss_function, optimizer, True)
         
-        valid_loss, valid_acc, valid_fscore, valid_label, valid_pred, valid_mask = train_or_eval_model(model, valid_loader, loss_function)
-        
-        # test_loss, test_acc, test_fscore, test_label, test_pred, test_mask  = train_or_eval_model(model, test_loader, loss_function)
+        valid_loss, valid_acc, valid_fscore, valid_label, valid_pred, valid_mask = train_model(model, valid_loader, loss_function)
         
         valid_losses.append(valid_loss)
         valid_fscores.append(valid_fscore)
-        # test_fscores.append(test_fscore)
         
         # Save model based on best fscore for validation set
         if best_fscore == None or best_fscore > valid_fscore:
@@ -247,69 +230,25 @@ def train(cfg):
 
         if cfg.save_train_res:
             lf.write(x + '\n')
-        
-    # valid_fscores = np.array(valid_fscores).transpose()
-    # test_fscores = np.array(test_fscores).transpose()        
-        
-    # print('Test performance.')
-    # if dataset == 'dailydialog' and classify =='emotion':  
-    #     score1 = test_fscores[0][np.argmin(valid_losses)]
-    #     score2 = test_fscores[0][np.argmax(valid_fscores[0])]
-    #     score3 = test_fscores[1][np.argmin(valid_losses)]
-    #     score4 = test_fscores[1][np.argmax(valid_fscores[1])]
-    #     score5 = test_fscores[2][np.argmin(valid_losses)]
-    #     score6 = test_fscores[2][np.argmax(valid_fscores[2])]
-    #     score7 = test_fscores[3][np.argmin(valid_losses)]
-    #     score8 = test_fscores[3][np.argmax(valid_fscores[3])]
-    #     score9 = test_fscores[4][np.argmin(valid_losses)]
-    #     score10 = test_fscores[4][np.argmax(valid_fscores[4])]
-    #     score11 = test_fscores[5][np.argmin(valid_losses)]
-    #     score12 = test_fscores[5][np.argmax(valid_fscores[5])]
-        
-    #     scores = [score1, score2, score3, score4, score5, score6, 
-    #               score7, score8, score9, score10, score11, score12]
-    #     scores_val_loss = [score1, score3, score5, score7, score9, score11]
-    #     scores_val_f1 = [score2, score4, score6, score8, score10, score12]
-        
-    #     print ('Scores: Weighted, Weighted w/o Neutral, Micro, Micro w/o Neutral, Macro, Macro w/o Neutral')
-    #     print('F1@Best Valid Loss: {}'.format(scores_val_loss))
-    #     print('F1@Best Valid F1: {}'.format(scores_val_f1))
-        
-    # elif (dataset=='dailydialog' and classify=='act') or (dataset=='persuasion'):  
-    #     score1 = test_fscores[0][np.argmin(valid_losses)]
-    #     score2 = test_fscores[0][np.argmax(valid_fscores[0])]
-    #     score3 = test_fscores[1][np.argmin(valid_losses)]
-    #     score4 = test_fscores[1][np.argmax(valid_fscores[1])]
-    #     score5 = test_fscores[2][np.argmin(valid_losses)]
-    #     score6 = test_fscores[2][np.argmax(valid_fscores[2])]
-        
-    #     scores = [score1, score2, score3, score4, score5, score6]
-    #     scores_val_loss = [score1, score3, score5]
-    #     scores_val_f1 = [score2, score4, score6]
-        
-    #     print ('Scores: Weighted, Micro, Macro')
-    #     print('F1@Best Valid Loss: {}'.format(scores_val_loss))
-    #     print('F1@Best Valid F1: {}'.format(scores_val_f1))
-        
-    # else:
-    #     score1 = test_fscores[0][np.argmin(valid_losses)]
-    #     score2 = test_fscores[0][np.argmax(valid_fscores[0])]
-    #     scores = [score1, score2]
-    #     print('F1@Best Valid Loss: {}; F1@Best Valid F1: {}'.format(score1, score2))
-        
-    # scores = [str(item) for item in scores]
-    
-    # rf.write('\t'.join(scores) + '\t' + str(cfg) + '\n')
+
     if cfg.save_train_res:
         lf.write(str(cfg) + '\n')
         lf.write('Best Valid F1: {}'.format(best_fscore))
         lf.write('\n' + str(classification_report(best_label, best_pred, sample_weight=best_mask, digits=4)) + '\n')
+        lf.write('\n' + 'Confusion matrix (valid)' + '\n')
         lf.write(str(confusion_matrix(best_label, best_pred, sample_weight=best_mask)) + '\n')
         lf.write('-'*50 + '\n\n')
-        #rf.close()
         lf.close()
 
 if __name__ == "__main__":
+    """Calls the train method using training and validation sets.
+
+    Example::
+        To run with default parameters:
+        python -m train
+        To run with custom training config:
+        python -m train --config config/dialogueRNN_config.json
+    """
     cfg = parse_args_and_load_config()
     train(cfg)
     

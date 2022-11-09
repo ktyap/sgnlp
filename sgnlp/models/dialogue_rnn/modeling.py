@@ -34,30 +34,24 @@ class DialogueRNNPreTrainedModel(PreTrainedModel):
     config_class = DialogueRNNConfig
     base_model_prefix = "dialogueRNN"
 
-    def _init_weights(self, module: nn.Module) -> None:
-        """
-        Initialize the weights
-        """
-        pass
-
 class DialogueRNNModel(DialogueRNNPreTrainedModel):
-    """TODO The Latent Structure Refinement Model performs relation classification on all pairs of entity clusters.
+    """The Dialogue RNN Model performs emotion recognition in conversations.
     This model is also a PyTorch `torch.nn.Module <https://pytorch.org/docs/stable/nn.html#torch.nn.Module>`__
     subclass. Use it as a regular PyTorch Module and refer to the PyTorch documentation for all matter related to
     general usage and behavior.
     Args:
-        config (:class:`~sgnlp.models.DialogueRNN.config.DialogueRNNConfig`):
+        config (:class:`~sgnlp.models.dialogue_rnn.config.DialogueRNNConfig`):
             Model configuration class with all the parameters of the model. Initializing with a config file does not
             load the weights associated with the model, only the configuration.
             Use the :obj:`.from_pretrained` method to load the model weights.
     Example::
-        from sgnlp.models.bieru import DialogueRNNModel, DialogueRNNConfig
+        from sgnlp.models.dialogue_rnn import DialogueRNNModel, DialogueRNNConfig
         # Method 1: Loading a default model
         config = DialogueRNNConfig()
         model = DialogueRNNModel(config)
         # Method 2: Loading from pretrained
-        TODO config = DialogueRNNConfig.from_pretrained('https://storage.googleapis.com/sgnlp/models/lsr/config.json')
-        TODO model = DialogueRNNModel.from_pretrained('https://storage.googleapis.com/sgnlp/models/lsr/pytorch_model.bin',
+        config = DialogueRNNConfig.from_pretrained('https://storage.googleapis.com/sgnlp/models/dialogue_rnn/config.json')
+        model = DialogueRNNModel.from_pretrained('https://storage.googleapis.com/sgnlp/models/dialogue_rnn/pytorch_model.bin',
                                          config=config)
     """
     def __init__(self, config: DialogueRNNConfig) -> None:
