@@ -8,9 +8,9 @@ from .postprocess import DialogueRNNPostprocessor
 config = DialogueRNNConfig.from_pretrained("https://storage.googleapis.com/sgnlp/models/dialogue_rnn/config.json")
 model = DialogueRNNModel.from_pretrained("https://storage.googleapis.com/sgnlp/models/dialogue_rnn/pytorch_model.bin", config=config)
 
-# preprocessor = DialogueRNNPreprocessor(model.transformer_model_family, model.model, model.tokenizer)
+preprocessor = DialogueRNNPreprocessor(model.transformer_model_family, model.model, model.tokenizer)
 # To force the use of CPU instead of GPU
-preprocessor = DialogueRNNPreprocessor(model.transformer_model_family, model.model, model.tokenizer, True)
+# preprocessor = DialogueRNNPreprocessor(model.transformer_model_family, model.model, model.tokenizer, True)
 
 postprocessor = DialogueRNNPostprocessor()
 
@@ -48,10 +48,10 @@ input_batch = {
 
 tensor_dict = preprocessor(**input_batch)
 
-# output = model(**tensor_dict)
-# To force the use of CPU instead of GPU
-tensor_dict['no_cuda'] = True
 output = model(**tensor_dict)
+# To force the use of CPU instead of GPU
+# tensor_dict['no_cuda'] = True
+# output = model(**tensor_dict)
 
 predictions = postprocessor(output)
 print(predictions)
