@@ -34,7 +34,7 @@ def configure_optimizers(model, weight_decay, learning_rate, adam_epsilon):
     return optimizer
 
 
-def train_model(model, dataloader, loss_function, optimizer=None, train=False, no_cuda=False):
+def train_model(model, dataloader, loss_function, optimizer=None, train=False, no_cuda=True):
     """Run training and evaluation using training and validation sets.
 
     Args:

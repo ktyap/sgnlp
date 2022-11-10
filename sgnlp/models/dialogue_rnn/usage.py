@@ -13,7 +13,11 @@ from sgnlp.models.dialogue_rnn.postprocess import DialogueRNNPostprocessor
 #model = DialogueRNNModel.from_pretrained(pathlib.Path(model_path).joinpath("pytorch_model.bin"), config=config)
 config = DialogueRNNConfig.from_pretrained("https://storage.googleapis.com/sgnlp/models/dialogue_rnn/config.json")
 model = DialogueRNNModel.from_pretrained("https://storage.googleapis.com/sgnlp/models/dialogue_rnn/pytorch_model.bin", config=config)
-preprocessor = DialogueRNNPreprocessor(model.transformer_model_family, model.model, model.tokenizer)
+
+# preprocessor = DialogueRNNPreprocessor(model.transformer_model_family, model.model, model.tokenizer)
+# To force the use of CPU instead of GPU
+preprocessor = DialogueRNNPreprocessor(model.transformer_model_family, model.model, model.tokenizer, False)
+
 postprocessor = DialogueRNNPostprocessor()
 
 # conversations, speaker_mask
@@ -50,6 +54,6 @@ input_batch = (
 
 features, lengths, umask, qmask = preprocessor(input_batch[0], input_batch[1])
 
-output = model(features, lengths, umask, qmask)
+output = model(features, lengths, umask, qmask, None, None, None, False)
 predictions = postprocessor(output)
 print(predictions)

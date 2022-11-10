@@ -141,6 +141,12 @@ class DialogueRNNCell(nn.Module):
         qm_idx = torch.argmax(qmask, 1)
         q0_sel = self._select_parties(q0, qm_idx)
 
+        if U.is_cuda:
+            self.g_cell.cuda()
+            self.p_cell.cuda()
+            self.e_cell.cuda()
+            self.attention.cuda()
+
         g_ = self.g_cell(torch.cat([U,q0_sel], dim=1),
                 torch.zeros(U.size()[0],self.D_g).type(U.type()) if g_hist.size()[0]==0 else
                 g_hist[-1])

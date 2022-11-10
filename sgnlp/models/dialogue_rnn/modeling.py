@@ -178,7 +178,7 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
         loss_function=None,
         loss_mask=None,
         label=None,
-        no_cuda=False
+        no_cuda=True
     ):
 
         start = torch.cumsum(torch.cat((lengths.data.new(1).zero_(), lengths[:-1])), 0)
@@ -235,6 +235,8 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
             hidden = self.dropout_rec(hidden)
              
             if self.residual:
+                if features.is_cuda:
+                    self.fc.cuda()
                 features = self.fc(features)
                 features = hidden + features   
             else:
@@ -242,6 +244,8 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
             features = features * mask
             
             if self.attention:
+                if features.is_cuda:
+                    self.linear.cuda()
                 att_features = []
                 for t in features:
                     att_ft, _ = self.matchatt(features, t, mask=umask)
@@ -249,8 +253,12 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
                 att_features = torch.cat(att_features, dim=0)
                 hidden = F.relu(self.linear(att_features))
             else:
+                if features.is_cuda:
+                    self.linear.cuda()
                 hidden = torch.tanh(self.linear(features))
             
+            if hidden.is_cuda:
+                self.smax_fc.cuda()
             
             log_prob = F.log_softmax(self.smax_fc(hidden), 2)
             

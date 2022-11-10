@@ -19,7 +19,7 @@ class DialogueRNNPostprocessor:
             raise ValueError("'dataset' and 'classify' must be 'iemocap' and 'emotion' respectively")
     
     def __call__(self, preds) -> Any:
-        raw_preds = preds.prediction.detach().numpy()
+        raw_preds = preds.prediction.detach().cpu().numpy()
         preds = [self.label_index_map[pred] for pred in raw_preds]
 
         return preds

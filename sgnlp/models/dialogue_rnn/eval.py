@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def eval_model(model, dataloader, no_cuda=False):
+def eval_model(model, dataloader, no_cuda=True):
     
     losses, preds, labels, masks = [], [], [], []
     

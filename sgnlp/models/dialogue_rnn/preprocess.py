@@ -5,11 +5,17 @@ class DialogueRNNPreprocessor:
     """Class to initialise the Preprocessor for DialogueRNNModel.
     Preprocesses inputs and tokenises them so they can be used with DialogueRNNModel.
     """
-    def __init__(self, transformer_model_family, transformer_model, tokenizer=None, no_cuda=False):
+    def __init__(self, transformer_model_family, transformer_model, tokenizer=None, no_cuda=None):
         self.transformer_model_family = transformer_model_family
         self.model = transformer_model
         self.tokenizer = tokenizer
-        self.no_cuda = no_cuda
+        if no_cuda is None:
+            if torch.cuda.is_available():
+                self.no_cuda = False
+            else:
+                self.no_cuda = True
+        else:
+            self.no_cuda = no_cuda
 
     def __call__(self, conversations, speaker_mask):
         # create umask and qmasks
@@ -41,6 +47,7 @@ class DialogueRNNPreprocessor:
                 input_ids = batch['input_ids']  #.cuda()
                 attention_mask = batch['attention_mask']  #.cuda()
             else:
+                self.model.to('cuda')
                 input_ids = batch['input_ids'].cuda()
                 attention_mask = batch['attention_mask'].cuda()
                 
