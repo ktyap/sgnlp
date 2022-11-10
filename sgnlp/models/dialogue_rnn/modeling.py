@@ -57,7 +57,7 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
     def __init__(self, config: DialogueRNNConfig) -> None:
         super().__init__(config)
 
-        # if torch.cuda.is_available() and True:  #TODO: update gpu or cpu
+        # if torch.cuda.is_available() and True:
         #     self.FloatTensor = torch.cuda.FloatTensor
         #     self.LongTensor = torch.cuda.LongTensor
         #     self.ByteTensor = torch.cuda.ByteTensor
@@ -193,12 +193,6 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
 
         start = torch.cumsum(torch.cat((lengths.data.new(1).zero_(), lengths[:-1])), 0)
         
-        # if no_cuda:
-        #     features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
-        #                         for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
-        # else:
-        #     features = torch.stack([self.pad(features.narrow(0, s, l).cuda(), max(lengths))
-        #                         for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         

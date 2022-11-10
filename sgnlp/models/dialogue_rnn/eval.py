@@ -99,12 +99,15 @@ def eval(cfg):
 
     logger.info(f"Training arguments: {vars(cfg)}")
 
-    model_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.model_folder)
-    dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.iemocap_dataset_path)
+    #model_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.model_folder)
+    model_path = pathlib.Path(cfg.model_folder)
+    #dataset_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.iemocap_dataset_path)
+    dataset_path = pathlib.Path(cfg.iemocap_dataset_path)
 
     if cfg.save_eval_res:
         curr_time = datetime.now().strftime("%y%b%d_%H-%M-%S")
-        output_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.output_dir)
+        #output_path = pathlib.Path(__file__).resolve().parents[0].joinpath(cfg.output_dir)
+        output_path = pathlib.Path(cfg.output_dir)
         if not pathlib.Path(pathlib.PurePath(output_path, curr_time)).exists():
             pathlib.Path(pathlib.PurePath(output_path, curr_time)).mkdir(parents=True, exist_ok=True)
         output_path = pathlib.Path(output_path).joinpath(curr_time)

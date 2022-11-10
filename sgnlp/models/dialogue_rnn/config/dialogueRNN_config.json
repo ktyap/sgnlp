@@ -1,10 +1,10 @@
 {
-    "model_folder": "model/",
+    "model_folder": "./model",
     "no_cuda": true,
-    "iemocap_dataset_path": "datasets/",
+    "iemocap_dataset_path": "./datasets",
     "save_train_res": true,
     "save_eval_res": true,
-    "output_dir": "outputs",
+    "output_dir": "./outputs",
     "train_args": {
         "epochs": 1,
         "lr": 0.00001,

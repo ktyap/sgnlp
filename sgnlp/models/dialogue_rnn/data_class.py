@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 class DialogueRNNArguments:
     model_folder: str = field(
         default="model",
-        metadata={"help": "Path to save pretrained weights and config"}
+        metadata={"help": "Path to load local pretrained weights and config"}
     )
     no_cuda: bool = field(
         default=True,
