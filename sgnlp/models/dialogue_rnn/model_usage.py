@@ -5,6 +5,10 @@ from .preprocess import DialogueRNNPreprocessor
 from .postprocess import DialogueRNNPostprocessor
 
 
+"""To run in local directory ("models"):
+python -m dialogue_rnn.model_usage
+"""
+
 config = DialogueRNNConfig.from_pretrained("https://storage.googleapis.com/sgnlp/models/dialogue_rnn/config.json")
 model = DialogueRNNModel.from_pretrained("https://storage.googleapis.com/sgnlp/models/dialogue_rnn/pytorch_model.bin", config=config)
 
