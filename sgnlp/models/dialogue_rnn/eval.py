@@ -16,7 +16,6 @@ from .utils import configure_dataloaders, parse_args_and_load_config
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 def eval_model(model, dataloader, no_cuda=True):
     
     losses, preds, labels, masks = [], [], [], []
@@ -28,7 +27,7 @@ def eval_model(model, dataloader, no_cuda=True):
 
     for conversations, label, loss_mask, speaker_mask in tqdm(dataloader, leave=False):
 
-        features, lengths, umask, qmask = preprocessor(conversations, speaker_mask)
+        tensor_dict = preprocessor(conversations, speaker_mask)
         
         # create labels and mask
         if no_cuda:
@@ -47,7 +46,11 @@ def eval_model(model, dataloader, no_cuda=True):
         labels_ = label.view(-1) 
 
         # obtain log probabilities
-        output = model(features, lengths, umask, qmask, None, None, None, no_cuda)
+        tensor_dict['loss_function'] = None
+        tensor_dict['loss_mask'] = None
+        tensor_dict['label'] = None
+        tensor_dict['no_cuda'] = no_cuda
+        output = model(**tensor_dict)
         pred_ = output.prediction
         
         preds.append(pred_.data.cpu().numpy())

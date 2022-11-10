@@ -178,16 +178,28 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
         loss_function=None,
         loss_mask=None,
         label=None,
-        no_cuda=True
+        no_cuda=None
     ):
+        if no_cuda is None:
+            if torch.cuda.is_available():
+                no_cuda = False
+            else:
+                no_cuda = True
+
+        if no_cuda:
+            self.model.to('cpu')
+        else:
+            self.model.to('cuda')
 
         start = torch.cumsum(torch.cat((lengths.data.new(1).zero_(), lengths[:-1])), 0)
         
-        if no_cuda:
-            features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
-                                for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
-        else:
-            features = torch.stack([self.pad(features.narrow(0, s, l).cuda(), max(lengths))
+        # if no_cuda:
+        #     features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
+        #                         for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
+        # else:
+        #     features = torch.stack([self.pad(features.narrow(0, s, l).cuda(), max(lengths))
+        #                         for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
+        features = torch.stack([self.pad(features.narrow(0, s, l), max(lengths))
                                 for s, l in zip(start.data.tolist(), lengths.data.tolist())], 0).transpose(0, 1)
         
         if no_cuda:
@@ -235,12 +247,25 @@ class DialogueRNNModel(DialogueRNNPreTrainedModel):
             hidden = self.dropout_rec(hidden)
              
             if self.residual:
-                if features.is_cuda:
+                # features = self.fc(features)
+                # features = hidden + features
+                if not no_cuda:
                     self.fc.cuda()
-                features = self.fc(features)
-                features = hidden + features   
+                    features = self.fc(features)
+                    features = hidden + features
+                    features.cuda()
+                else:
+                    self.fc.cpu()
+                    features = self.fc(features)
+                    features = hidden + features
+                    features.cpu()
             else:
-                features = hidden  
+                features = hidden
+            # if not no_cuda:
+            #     features = features * mask
+            #     features.cuda()
+            # else:
+            #     features = features * mask
             features = features * mask
             
             if self.attention:

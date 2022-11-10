@@ -56,5 +56,8 @@ class DialogueRNNPreprocessor:
             if self.transformer_model_family == 'roberta':
                 features = features[:, 0, :]
         
-        return features, lengths, umask, qmask
+        return {'features': features,
+                'lengths': lengths,
+                'umask': umask,
+                'qmask': qmask}
 

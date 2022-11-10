@@ -63,7 +63,7 @@ def train_model(model, dataloader, loss_function, optimizer=None, train=False, n
         if train:
             optimizer.zero_grad()
 
-        features, lengths, umask, qmask = preprocessor(conversations, speaker_mask)
+        tensor_dict = preprocessor(conversations, speaker_mask)
         
         # create labels and mask
         if no_cuda:
@@ -83,7 +83,11 @@ def train_model(model, dataloader, loss_function, optimizer=None, train=False, n
 
         
         # obtain log probabilities
-        output = model(features, lengths, umask, qmask, loss_function, loss_mask, labels_, no_cuda)
+        tensor_dict['loss_function'] = loss_function
+        tensor_dict['loss_mask'] = loss_mask
+        tensor_dict['label'] = labels_
+        tensor_dict['no_cuda'] = no_cuda
+        output = model(**tensor_dict)
         loss, pred_ = output.loss, output.prediction
         
         
