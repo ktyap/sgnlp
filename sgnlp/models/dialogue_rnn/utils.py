@@ -113,7 +113,8 @@ def parse_args_and_load_config(config_path: str = "config/dialogueRNN_config.jso
     parser.add_argument("--config", type=str, default=config_path)
     args = parser.parse_args()
     try:
-        with open(pathlib.Path(__file__).parent / args.config, "r") as cfg_file:
+        #with open(pathlib.Path(__file__).parent / args.config, "r") as cfg_file:
+        with open(pathlib.Path(args.config), "r") as cfg_file:
             cfg = json.load(cfg_file)
             dialogueRNN_args = DialogueRNNArguments(**cfg)
     except:

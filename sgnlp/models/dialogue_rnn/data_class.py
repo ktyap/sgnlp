@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 @dataclass
 class DialogueRNNArguments:
     model_folder: str = field(
-        default="model",
+        default="./model",
         metadata={"help": "Path to load local pretrained weights and config"}
     )
     no_cuda: bool = field(
@@ -20,11 +20,11 @@ class DialogueRNNArguments:
         metadata={"help": "Option to save evaluation results"}
     )
     output_dir: str = field(
-        default="outputs",
+        default="./outputs",
         metadata={"help": "Path to save outputs (train/eval results and model)"}
     )
     iemocap_dataset_path: str = field(
-        default="datasets",
+        default="./datasets",
         metadata={"help": "Temporary path for IEMOCAP dataset"}
     )
     train_args: Dict[str, Any] = field(
