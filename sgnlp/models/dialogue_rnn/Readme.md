@@ -35,8 +35,8 @@ Folder structure to use DialogueRNN.
 ```bash
 |-- config
 |   |-- config.json
-|   |-- dialogueRNN_config.json
-└-- datasets
+|   └-- dialogueRNN_config.json
+|-- datasets
 |   └-- dialogue_level_minibatch
 |       └-- iemocap
 |           |-- iemocap_test_emotion.tsv
