@@ -264,12 +264,6 @@ def train(cfg):
 
 if __name__ == "__main__":
     """Calls the train method using training and validation sets.
-
-    Example::
-        To run with default parameters:
-        python -m train
-        To run with custom training config:
-        python -m train --config config/dialogueRNN_config.json
     """
     cfg = parse_args_and_load_config()
     train(cfg)

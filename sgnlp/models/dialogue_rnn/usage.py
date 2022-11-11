@@ -1,4 +1,3 @@
-import pathlib
 from sgnlp.models.dialogue_rnn.config import DialogueRNNConfig
 from sgnlp.models.dialogue_rnn.modeling import DialogueRNNModel
 from sgnlp.models.dialogue_rnn.preprocess import DialogueRNNPreprocessor

@@ -189,12 +189,6 @@ def eval(cfg):
 
 if __name__ == "__main__":
     """Calls the eval method with a pretrained model using test sets.
-
-    Example::
-        To run with default parameters:
-        python -m eval
-        To run with custom training config:
-        python -m eval --config config/dialogueRNN_config.json
     """
     cfg = parse_args_and_load_config()
     eval(cfg)
